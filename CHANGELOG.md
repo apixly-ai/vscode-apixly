@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Add **Open authorization page** and **Copy authorization link** beside the current authorization code, with 44-pixel controls that wrap in narrow panels.
+- Keep the current approval and polling active when opening the browser fails. Reopening uses the same unexpired authorization page and never creates another connection request.
+- Keep authorization URLs in the extension host; cancel, expiry and successful approval disable the old actions.
+
 ## 0.2.0
 
 - Connect an existing Apixly account through browser approval and PKCE. Keep only a revocable connection token in SecretStorage; choose the default Studixly Key or another active owned Key.

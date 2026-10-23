@@ -1218,6 +1218,21 @@ body.vscode-high-contrast textarea {
   color: #2e8fff;
   overflow-wrap: anywhere;
 }
+.authorization-actions {
+  align-items: stretch;
+}
+.authorization-actions .button {
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 580px) {
+  .authorization-actions .button {
+    flex: 1 1 100%;
+  }
+}
 .manual-settings {
   border-top: 1px solid var(--line);
   margin-top: 16px;

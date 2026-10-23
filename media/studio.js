@@ -12,6 +12,8 @@
   let hasKey = false;
   let connectionState = {};
   let connecting = false;
+  let authorizationState;
+  let authorizationTimer;
   let references = [];
   let videoReferences = [];
   let catalog = [];
@@ -29,6 +31,36 @@
   function clearMessage() {
     $("message").className = "message hidden";
     $("message").textContent = "";
+  }
+  function updateAuthorizationControls() {
+    const current =
+      connecting &&
+      authorizationState &&
+      authorizationState.expiresAt > Date.now();
+    $("open-authorization").disabled =
+      busy || !current || !authorizationState.canOpen;
+    $("copy-authorization").disabled =
+      busy || !current || !authorizationState.canCopy;
+  }
+  function renderAuthorization(value) {
+    clearTimeout(authorizationTimer);
+    authorizationState = value || null;
+    const status = value?.status;
+    $("authorization-status").textContent =
+      status === "manual"
+        ? "Your browser did not open. Use Open authorization page or Copy authorization link, then approve the code. This window keeps waiting."
+        : status === "copied"
+          ? "Authorization link copied. Open it in your browser and approve the same code. This window keeps waiting."
+          : value
+            ? "Your authorization page opens in your browser. Use the button below if you need to open the same page again."
+            : "";
+    updateAuthorizationControls();
+    if (value && value.expiresAt > Date.now())
+      authorizationTimer = setTimeout(() => {
+        updateAuthorizationControls();
+        $("authorization-status").textContent =
+          "This authorization page has expired. Cancel and start a new connection.";
+      }, value.expiresAt - Date.now());
   }
   function referenceGeometry() {
     return (
@@ -74,6 +106,7 @@
         : mode === "edit"
           ? "Edit image"
           : "Generate image";
+    updateAuthorizationControls();
   }
   function renderConnection(value) {
     connectionState = value || {};
@@ -122,6 +155,7 @@
     $("authorization-progress").classList.toggle("hidden", !connecting);
     $("connection").classList.toggle("connected", hasKey);
     $("onboarding").classList.toggle("hidden", hasKey);
+    renderAuthorization(connectionState.authorization);
   }
   function renderCatalogStatus(count) {
     $("catalog-status").textContent = catalogState.error
@@ -458,6 +492,12 @@
       $("authorization-expiry").textContent =
         `Expires at ${new Date(message.expiresAt).toLocaleTimeString()}. Waiting here does not generate media.`;
       $("authorization-progress").classList.remove("hidden");
+      renderAuthorization({
+        expiresAt: message.expiresAt,
+        canOpen: true,
+        canCopy: true,
+        status: "opening",
+      });
       $("authorization-progress").scrollIntoView({ block: "nearest" });
       setBusy(busy);
     } else if (message.type === "videoPreset") {

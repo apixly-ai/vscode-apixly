@@ -44,6 +44,8 @@ const SIMPLE = new Set([
   "refreshCatalog",
   "connectAccount",
   "cancelConnection",
+  "openAuthorization",
+  "copyAuthorization",
   "disconnectAccount",
   "refreshAccount",
   "useManualKey",
@@ -650,6 +652,26 @@ function createStudio({
           await state({ refreshAccount: Boolean(credentialSession) });
           await publishCatalog({ cachedOnly: true });
         } else if (
+          ["openAuthorization", "copyAuthorization"].includes(message.type)
+        ) {
+          if (!credentialSession)
+            throw problem("Account connection is unavailable in this host.");
+          try {
+            if (message.type === "openAuthorization")
+              await credentialSession.openAuthorization({
+                openExternal: (url) =>
+                  vscode.env.openExternal(
+                    vscode.Uri.parse ? vscode.Uri.parse(url) : url,
+                  ),
+              });
+            else
+              await credentialSession.copyAuthorization({
+                writeText: (url) => vscode.env.clipboard.writeText(url),
+              });
+          } finally {
+            await state();
+          }
+        } else if (
           [
             "connectAccount",
             "cancelConnection",
@@ -670,7 +692,12 @@ function createStudio({
                   vscode.env.openExternal(
                     vscode.Uri.parse ? vscode.Uri.parse(url) : url,
                   ),
-                onPending: (flow) => send({ type: "authorization", ...flow }),
+                onPending: (flow) =>
+                  send({
+                    type: "authorization",
+                    userCode: flow.userCode,
+                    expiresAt: flow.expiresAt,
+                  }),
               });
             else if (message.type === "disconnectAccount")
               await credentialSession.disconnect();

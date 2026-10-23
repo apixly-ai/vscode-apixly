@@ -18,6 +18,7 @@ function createCredentialSession({
   context,
   accountClient = createAccountClient(),
   clientFactory = (key, options) => createClient(key, undefined, options),
+  now = Date.now,
 }) {
   let metadata;
   let accountError;
@@ -26,11 +27,24 @@ function createCredentialSession({
   let active = 0;
   let mutating = false;
   let attempt;
+  let pendingAuthorization;
   let epoch = 0;
   let connectionDigest;
   const digest = (token) =>
     token ? crypto.createHash("sha256").update(token).digest("hex") : null;
   const listeners = new Set();
+  const availableAuthorization = () =>
+    pendingAuthorization &&
+    attempt &&
+    !attempt.signal.aborted &&
+    pendingAuthorization.flow.expiresAt > now();
+  function currentAuthorization() {
+    if (!availableAuthorization())
+      throw problem(
+        "There is no current authorization page. The connection was cancelled, completed or expired; start a new connection.",
+      );
+    return pendingAuthorization;
+  }
   const mode = () =>
     context.globalState.get(AUTH_MODE) === "account" ? "account" : "manual";
   const changed = () => {
@@ -180,6 +194,16 @@ function createCredentialSession({
         keys: current === "account" ? keys : [],
         busy: Boolean(active || mutating),
         connecting: Boolean(attempt),
+        authorization: pendingAuthorization
+          ? {
+              expiresAt: pendingAuthorization.flow.expiresAt,
+              canOpen: Boolean(
+                availableAuthorization() && !pendingAuthorization.opening,
+              ),
+              canCopy: Boolean(availableAuthorization()),
+              status: pendingAuthorization.status,
+            }
+          : null,
       };
     },
     async resolve({ refreshAccount = false } = {}) {
@@ -226,17 +250,17 @@ function createCredentialSession({
           flow = await accountClient.begin(controller.signal);
           if (controller.signal.aborted)
             throw problem("Account connection cancelled.");
-          await onPending(flow);
-          if (
-            typeof openExternal !== "function" ||
-            (await openExternal(flow.verificationUri)) === false
-          )
-            throw problem(
-              "Open the Apixly authorization link in your browser, then connect again.",
-            );
+          pendingAuthorization = { flow, status: "opening", opening: false };
+          await onPending({
+            userCode: flow.userCode,
+            expiresAt: flow.expiresAt,
+          });
+          await session.openAuthorization({ openExternal });
           const grant = await accountClient.poll(flow, {
             signal: controller.signal,
           });
+          pendingAuthorization = undefined;
+          changed();
           if (controller.signal.aborted) {
             await accountClient.disconnect(grant.token).catch(() => undefined);
             throw problem("Account connection cancelled.");
@@ -291,12 +315,45 @@ function createCredentialSession({
           return await session.view();
         } finally {
           if (flow) accountClient.cancel(flow);
+          pendingAuthorization = undefined;
           attempt = undefined;
         }
       });
     },
     cancelConnect() {
       attempt?.abort();
+      pendingAuthorization = undefined;
+      changed();
+    },
+    async openAuthorization({ openExternal } = {}) {
+      const current = currentAuthorization();
+      if (current.opening) return false;
+      current.opening = true;
+      changed();
+      try {
+        const opened =
+          typeof openExternal === "function" &&
+          (await openExternal(current.flow.verificationUri)) !== false;
+        if (pendingAuthorization === current)
+          current.status = opened ? "opened" : "manual";
+        return opened;
+      } catch {
+        if (pendingAuthorization === current) current.status = "manual";
+        return false;
+      } finally {
+        current.opening = false;
+        changed();
+      }
+    },
+    async copyAuthorization({ writeText } = {}) {
+      const current = currentAuthorization();
+      if (typeof writeText !== "function")
+        throw problem(
+          "The clipboard is unavailable. Use Open authorization page instead.",
+        );
+      await writeText(current.flow.verificationUri);
+      if (pendingAuthorization === current) current.status = "copied";
+      changed();
     },
     async refresh() {
       if (mode() === "account") {
@@ -388,6 +445,7 @@ function createCredentialSession({
     dispose() {
       epoch++;
       attempt?.abort();
+      pendingAuthorization = undefined;
       listeners.clear();
       metadata = undefined;
       keys = [];

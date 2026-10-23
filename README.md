@@ -33,6 +33,8 @@ The gallery uses actual outputs from release acceptance on October 23, 2026. Its
 2. Run **Apixly Media: Open Media Studio** from the Command Palette.
 3. Choose **Connect Apixly account**. Sign in and approve the displayed code on apixly.ai using your existing account. Your **Studixly Key** is the default; the account area's **API Key** dropdown lets you choose another active Key you already own. Alternatively, choose **Use manual API key** and enter it in VS Code's native secure input, never in the Webview.
 4. Choose **Image**, **Edit image**, or **Video**. Open **Available models** to load the complete catalog for your selected Key, then enter your prompt and any needed parameters. You can still enter an exact model ID manually. Changing Key or refreshing the catalog never silently changes that ID.
+
+Connecting asks VS Code to open your authorization page in your browser. If no page appears, select **Open authorization page ↗**, or **Copy authorization link** and open it yourself. These buttons reuse the same current code while the extension keeps waiting for approval; they do not start a second connection or generate media. Canceling, expiry, or successful approval disables that page's actions. Browser behavior depends on your VS Code and operating-system settings.
 5. Choose local references for an image edit, or attach a public HTTPS image URL for reference video. A generated image's **Use for video** button fills a reference-capable preset for you to review; it never submits automatically. **Generate** submits a paid API request; the extension itself is free.
 6. Preview the finished image or video and select **Save to project**. You choose the destination, and existing files are preserved.
 

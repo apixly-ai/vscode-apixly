@@ -47,6 +47,50 @@ test("panel protocol rejects unknown commands, extra fields, paths and credentia
   );
 });
 
+test("authorization buttons accept only host-owned actions and reject injected URLs", async (t) => {
+  for (const type of ["openAuthorization", "copyAuthorization"]) {
+    assert.deepEqual(validateMessage({ type }), { type });
+    for (const field of ["url", "verificationUri", "expiresAt"])
+      assert.throws(() =>
+        validateMessage({ type, [field]: "https://attacker.example" }),
+      );
+  }
+  const opened = [],
+    copied = [];
+  const uri = "https://apixly.ai/connect/current?user_code=ABCD-EF12";
+  const f = await setup(t, {
+    credentialSession: {
+      view: async () => ({ mode: "manual", hasCredential: false }),
+      openAuthorization: async ({ openExternal }) => openExternal(uri),
+      copyAuthorization: async ({ writeText }) => writeText(uri),
+      connect: async ({ onPending }) =>
+        onPending({
+          userCode: "ABCD-EF12",
+          expiresAt: 10000,
+          verificationUri: uri,
+        }),
+    },
+  });
+  f.vscode.env.openExternal = async (value) => opened.push(String(value));
+  f.vscode.env.clipboard = { writeText: async (value) => copied.push(value) };
+  await f.studio.handle({ type: "openAuthorization" });
+  await f.studio.handle({ type: "copyAuthorization" });
+  await f.studio.handle({ type: "connectAccount" });
+  assert.deepEqual(opened, [uri]);
+  assert.deepEqual(copied, [uri]);
+  assert.equal(f.calls.length, 0);
+  assert(!JSON.stringify(f.messages).includes(uri));
+  const html = renderHtml({
+    cspSource: "resource:",
+    scriptUri: "studio.js",
+    styleUri: "studio.css",
+    nonce: "n",
+  });
+  assert(html.includes('data-action="openAuthorization"'));
+  assert(html.includes('data-action="copyAuthorization"'));
+  assert(html.includes("Open authorization page"));
+});
+
 test("rendered panel uses restrictive CSP and contains helpful verified Apixly routes", () => {
   const html = renderHtml({
     cspSource: "vscode-resource:",

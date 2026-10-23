@@ -38,10 +38,24 @@ function studio() {
   const account = element();
   account.dataset.action = "connectAccount";
   const sent = [];
+  const timers = new Map();
+  let clock = Date.now();
+  let timerId = 0;
   let receive;
   vm.runInNewContext(
     fs.readFileSync(path.join(__dirname, "../media/studio.js"), "utf8"),
     {
+      Date: class extends Date {
+        static now() {
+          return clock;
+        }
+      },
+      setTimeout: (callback) => {
+        const id = ++timerId;
+        timers.set(id, callback);
+        return id;
+      },
+      clearTimeout: (id) => timers.delete(id),
       acquireVsCodeApi: () => ({
         postMessage: (message) => sent.push(message),
       }),
@@ -66,7 +80,16 @@ function studio() {
       },
     },
   );
-  return { get, account, sent, receive: (data) => receive({ data }) };
+  return {
+    get,
+    account,
+    sent,
+    receive: (data) => receive({ data }),
+    expire: () => {
+      clock += 100000;
+      for (const fn of timers.values()) fn();
+    },
+  };
 }
 
 test("a new native authorization flow clears the previous flow error without submitting media", () => {
@@ -82,6 +105,48 @@ test("a new native authorization flow clears the previous flow error without sub
   assert.equal(f.get("message").className, "message hidden");
   assert.deepEqual(
     f.sent.map((message) => message.type),
+    ["ready"],
+  );
+});
+
+test("authorization actions stay usable while polling, expose a clear fallback, then disable at expiry or completion", () => {
+  const f = studio();
+  const expiresAt = Date.now() + 10000;
+  f.receive({ type: "authorization", userCode: "ABCD-EF12", expiresAt });
+  assert.equal(f.get("open-authorization").disabled, false);
+  assert.equal(f.get("copy-authorization").disabled, false);
+  f.receive({
+    type: "state",
+    hasKey: false,
+    connection: {
+      mode: "account",
+      connecting: true,
+      busy: true,
+      authorization: {
+        expiresAt,
+        canOpen: true,
+        canCopy: true,
+        status: "manual",
+      },
+    },
+  });
+  assert.equal(f.get("open-authorization").disabled, false);
+  assert.match(
+    f.get("authorization-status").textContent,
+    /did not open|could not open|couldn't open/i,
+  );
+  f.expire();
+  assert.equal(f.get("open-authorization").disabled, true);
+  assert.equal(f.get("copy-authorization").disabled, true);
+  f.receive({
+    type: "state",
+    hasKey: false,
+    connection: { mode: "account", connecting: false, authorization: null },
+  });
+  assert.equal(f.get("open-authorization").disabled, true);
+  assert.equal(f.get("copy-authorization").disabled, true);
+  assert.deepEqual(
+    f.sent.map((m) => m.type),
     ["ready"],
   );
 });

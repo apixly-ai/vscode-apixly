@@ -20,7 +20,7 @@ const metadata = {
   selection_revision: 1,
   expires_at: "2027-01-01T00:00:00Z",
 };
-function setup(initial = {}) {
+function setup(initial = {}, options = {}) {
   const secrets = new Map(Object.entries(initial)),
     state = new Map(),
     calls = [],
@@ -41,7 +41,7 @@ function setup(initial = {}) {
     begin: async () => ({
       userCode: "ABCD",
       verificationUri: "https://apixly.ai/connect/a",
-      expiresAt: 10000,
+      expiresAt: Date.now() + 10000,
       intervalMs: 5000,
     }),
     poll: async () => ({ token: "apc_private_connection", metadata: selected }),
@@ -100,9 +100,164 @@ function setup(initial = {}) {
       factories.push({ credential, options });
       return { ready: true };
     },
+    ...options,
   });
   return { session, context, secrets, state, calls, factories, accountClient };
 }
+
+async function pendingConnection(openExternal) {
+  let clock = 100;
+  const f = setup({}, { now: () => clock });
+  let finish;
+  let begins = 0;
+  let polls = 0;
+  const publicUri = "https://apixly.ai/connect/current?user_code=ABCD-EF12";
+  f.accountClient.begin = async () => {
+    begins++;
+    return {
+      userCode: "ABCD-EF12",
+      verificationUri: publicUri,
+      expiresAt: 10000,
+      intervalMs: 5000,
+    };
+  };
+  f.accountClient.poll = async () => {
+    polls++;
+    return new Promise((resolve) => {
+      finish = resolve;
+    });
+  };
+  const pending = [];
+  const work = f.session.connect({
+    openExternal,
+    onPending: (flow) => pending.push(flow),
+  });
+  work.catch(() => undefined);
+  for (let i = 0; i < 30 && !finish; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+  return {
+    ...f,
+    work,
+    pending,
+    publicUri,
+    finish: () => finish?.({ token: "apc_private_connection", metadata }),
+    counts: () => ({ begins, polls }),
+    expire: () => {
+      clock = 10000;
+    },
+  };
+}
+
+test("manual authorization reopen and copy reuse the current host-owned flow and never expose its URL in UI state", async () => {
+  const opened = [],
+    copied = [];
+  const f = await pendingConnection(async (uri) => {
+    opened.push(uri);
+    return true;
+  });
+  assert.deepEqual(f.counts(), { begins: 1, polls: 1 });
+  await f.session.openAuthorization({
+    openExternal: async (uri) => {
+      opened.push(uri);
+      return true;
+    },
+  });
+  await f.session.copyAuthorization({
+    writeText: async (uri) => copied.push(uri),
+  });
+  assert.deepEqual(opened, [f.publicUri, f.publicUri]);
+  assert.deepEqual(copied, [f.publicUri]);
+  assert.deepEqual(f.counts(), { begins: 1, polls: 1 });
+  assert.equal((await f.session.view()).authorization.canOpen, true);
+  assert(
+    !JSON.stringify({
+      pending: f.pending,
+      view: await f.session.view(),
+    }).includes(f.publicUri),
+  );
+  f.finish();
+  await f.work;
+  assert.equal((await f.session.view()).authorization, null);
+  await assert.rejects(
+    f.session.openAuthorization({ openExternal: async () => true }),
+    /current|expired|new connection/i,
+  );
+});
+
+test("a successful grant disables the authorization page before the safe Key list finishes loading", async () => {
+  const f = await pendingConnection(async () => true);
+  let finishKeys;
+  f.accountClient.keys = async () =>
+    new Promise((resolve) => {
+      finishKeys = resolve;
+    });
+  f.finish();
+  for (let i = 0; i < 30 && !finishKeys; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+  assert(finishKeys);
+  assert.equal((await f.session.view()).authorization, null);
+  await assert.rejects(
+    f.session.openAuthorization({ openExternal: async () => true }),
+    /current|expired|new connection/i,
+  );
+  finishKeys({ data: [], selected_key_id: "studixly", selection_revision: 1 });
+  await f.work;
+});
+
+for (const failure of ["false", "throw"])
+  test(`automatic browser ${failure} keeps approval polling alive with a manual fallback`, async () => {
+    let autoCalls = 0;
+    const f = await pendingConnection(async () => {
+      autoCalls++;
+      if (failure === "throw") throw Error("private platform exception");
+      return false;
+    });
+    assert.equal(autoCalls, 1);
+    assert.deepEqual(f.counts(), { begins: 1, polls: 1 });
+    assert.equal((await f.session.view()).connecting, true);
+    assert.equal((await f.session.view()).authorization.status, "manual");
+    assert(
+      !JSON.stringify(await f.session.view()).includes(
+        "private platform exception",
+      ),
+    );
+    f.finish();
+    await f.work;
+    assert.equal((await f.session.view()).hasConnection, true);
+  });
+
+for (const end of ["cancel", "expire"])
+  test(`${end} disables opening or copying the old authorization flow`, async () => {
+    const f = await pendingConnection(async () => true);
+    if (end === "cancel") f.session.cancelConnect();
+    else f.expire();
+    assert.equal(
+      (await f.session.view()).authorization?.canOpen ?? false,
+      false,
+    );
+    let staleOpens = 0;
+    await assert.rejects(
+      f.session.openAuthorization({
+        openExternal: async () => {
+          staleOpens++;
+          return true;
+        },
+      }),
+      /current|expired|cancel|new connection/i,
+    );
+    await assert.rejects(
+      f.session.copyAuthorization({
+        writeText: async () => {
+          staleOpens++;
+        },
+      }),
+      /current|expired|cancel|new connection/i,
+    );
+    assert.equal(staleOpens, 0);
+    f.session.cancelConnect();
+    f.finish();
+    await assert.rejects(f.work, /cancelled/);
+  });
 test("existing manual keys remain compatible, and connection tokens are routed only through the account relay", async () => {
   const f = setup({ [MANUAL_KEY]: "private-manual" });
   const manual = await f.session.resolve();
