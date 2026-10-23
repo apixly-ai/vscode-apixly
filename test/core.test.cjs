@@ -20,6 +20,89 @@ const json = (value, status = 200) =>
     headers: { "content-type": "application/json" },
   });
 
+test("account mode uses only the fixed first-party relay and never forwards connection authorization to result URLs", async () => {
+  const calls = [];
+  const api = createClient(
+    "apc_connection_secret",
+    async (url, init) => {
+      calls.push({ url: String(url), ...init });
+      if (String(url).endsWith("/models/list"))
+        return json({ data: [{ id: "seedream-5-0", type: "image" }] });
+      if (
+        String(url).endsWith("/content") ||
+        String(url).startsWith("https://cdn.example/")
+      )
+        return new Response(new Uint8Array([1, 2]), {
+          headers: { "content-type": "video/mp4" },
+        });
+      return json({ id: "17", status: "queued" });
+    },
+    { mode: "account" },
+  );
+  await api.models();
+  await api.submitVideo({
+    model: "exact-video",
+    prompt: "Keep exact",
+    params: { seconds: 1 },
+  });
+  await api.download({}, { kind: "video", id: "17" });
+  await api.download(
+    { url: "https://cdn.example/result.mp4" },
+    { kind: "video", id: "17" },
+  );
+  assert.deepEqual(
+    calls.slice(0, 3).map((r) => r.url),
+    [
+      "https://apixly.ai/api/integrations/v1/models/list",
+      "https://apixly.ai/api/integrations/v1/videos",
+      "https://apixly.ai/api/integrations/v1/videos/17/content",
+    ],
+  );
+  assert(
+    calls
+      .slice(0, 3)
+      .every(
+        (r) =>
+          r.headers.authorization === "Bearer apc_connection_secret" &&
+          r.redirect === "error",
+      ),
+  );
+  assert.equal(calls[3].headers.authorization, undefined);
+  assert.equal(calls[3].headers["user-agent"], undefined);
+  assert.throws(
+    () =>
+      createClient("secret", async () => {}, { mode: "https://evil.example" }),
+    /credential mode/,
+  );
+});
+
+test("broker submission_unknown 502 preserves unknown outcome and never retries a paid POST", async () => {
+  let calls = 0;
+  const api = createClient(
+    "apc_private",
+    async () => {
+      calls++;
+      return json(
+        {
+          error: { code: "submission_unknown", type: "submission_unknown" },
+          submission_outcome: "unknown",
+          automatic_retry: false,
+        },
+        502,
+      );
+    },
+    { mode: "account" },
+  );
+  await assert.rejects(
+    api.submitImage({ model: "exact-image", prompt: "one explicit request" }),
+    (error) =>
+      error.safe &&
+      error.unknownOutcome === true &&
+      !/change.*parameter|try.*model/i.test(error.message),
+  );
+  assert.equal(calls, 1);
+});
+
 test("image submit preserves exact model and sends one async JSON POST", async () => {
   const calls = [];
   const client = createClient("private-key", async (url, init) => {

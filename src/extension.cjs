@@ -13,6 +13,7 @@ const {
 } = require("./core.cjs");
 const KEY = "apixlyMedia.apiKey";
 const HISTORY = "apixlyMedia.tasks";
+const { createCredentialSession } = require("./credentials.cjs");
 const IMAGE_TYPES = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -31,6 +32,13 @@ function userError(message) {
 
 function createCommands(context, vscode, options = {}) {
   const factory = options.clientFactory ?? createClient;
+  const credentials =
+    options.credentials ??
+    createCredentialSession({
+      context,
+      clientFactory: (key, mode) => factory(key, undefined, mode),
+    });
+  context.subscriptions.push({ dispose: () => credentials.dispose?.() });
   let submitting = false;
   const polling = new Set();
 
@@ -41,11 +49,7 @@ function createCommands(context, vscode, options = {}) {
   }
 
   async function client() {
-    const key = await context.secrets.get(KEY);
-    if (!key) {
-      throw userError("Run Apixly Media: Set API Key first.");
-    }
-    return factory(key);
+    return (await credentials.resolve()).client;
   }
 
   async function remember(job) {
@@ -292,113 +296,121 @@ function createCommands(context, vscode, options = {}) {
         "A generation dialog or submission is already open in this window.",
       );
     }
-    submitting = true;
-    let api;
-    let job;
+    const release = credentials.hold();
     try {
-      api = await client();
-      const model = await vscode.window.showInputBox({
-        title: `Apixly ${kind}: exact model ID`,
-        placeHolder: "Use an exact model ID available to your API key",
-        ignoreFocusOut: true,
-        validateInput: (value) =>
-          !value || value !== value.trim() || value.length > 200
-            ? "Enter the exact model ID; no alias or replacement is applied."
-            : undefined,
-      });
-      if (!model) {
-        return;
-      }
-      const prompt = await vscode.window.showInputBox({
-        title: `Apixly ${kind}: prompt`,
-        prompt:
-          "This prompt and any reference files are sent to Apixly and its upstream model service.",
-        ignoreFocusOut: true,
-        validateInput: (value) =>
-          value.trim() ? undefined : "Enter a prompt.",
-      });
-      if (!prompt) {
-        return;
-      }
-      const raw = await vscode.window.showInputBox({
-        title: "Optional model parameters (JSON)",
-        value: "{}",
-        prompt:
-          kind === "image"
-            ? 'Model-specific options, for example {"size":"1024x1024","quality":"low"}. No defaults are added.'
-            : 'Flattened video options, for example {"seconds":5,"resolution":"720p","aspect_ratio":"16:9"}. Reference videos/audios may be URL arrays.',
-        ignoreFocusOut: true,
-        validateInput: (value) => {
-          try {
-            parseStudioParameters(value, kind);
-            return;
-          } catch {
-            return "Enter a JSON object with valid model options; model, prompt and async cannot be overridden.";
-          }
-        },
-      });
-      if (raw === undefined) {
-        return;
-      }
-      const params = parseStudioParameters(raw, kind);
-      let refs = [];
-      let mask;
-      if (edit) {
-        refs = await references();
-        if (!refs.length) {
+      submitting = true;
+      let api;
+      let job;
+      try {
+        api = await client();
+        const model = await vscode.window.showInputBox({
+          title: `Apixly ${kind}: exact model ID`,
+          placeHolder: "Use an exact model ID available to your API key",
+          ignoreFocusOut: true,
+          validateInput: (value) =>
+            !value || value !== value.trim() || value.length > 200
+              ? "Enter the exact model ID; no alias or replacement is applied."
+              : undefined,
+        });
+        if (!model) {
           return;
         }
-      } else if (kind === "video") {
-        const url = await vscode.window.showInputBox({
-          title: "Optional public HTTPS reference image URL",
-          value: "",
+        const prompt = await vscode.window.showInputBox({
+          title: `Apixly ${kind}: prompt`,
           prompt:
-            "Leave empty for text-to-video. Local files are not uploaded or hosted; the model must support image2video.",
+            "This prompt and any reference files are sent to Apixly and its upstream model service.",
+          ignoreFocusOut: true,
+          validateInput: (value) =>
+            value.trim() ? undefined : "Enter a prompt.",
+        });
+        if (!prompt) {
+          return;
+        }
+        const raw = await vscode.window.showInputBox({
+          title: "Optional model parameters (JSON)",
+          value: "{}",
+          prompt:
+            kind === "image"
+              ? 'Model-specific options, for example {"size":"1024x1024","quality":"low"}. No defaults are added.'
+              : 'Flattened video options, for example {"seconds":5,"resolution":"720p","aspect_ratio":"16:9"}. Reference videos/audios may be URL arrays.',
           ignoreFocusOut: true,
           validateInput: (value) => {
-            if (!value) return;
             try {
-              validateReferenceUrl(value);
+              parseStudioParameters(value, kind);
               return;
-            } catch (error) {
-              return error.message;
+            } catch {
+              return "Enter a JSON object with valid model options; model, prompt and async cannot be overridden.";
             }
           },
         });
-        if (url === undefined) return;
-        if (url)
-          params.images = [...(params.images || []), validateReferenceUrl(url)];
+        if (raw === undefined) {
+          return;
+        }
+        const params = parseStudioParameters(raw, kind);
+        let refs = [];
+        let mask;
+        if (edit) {
+          refs = await references();
+          if (!refs.length) {
+            return;
+          }
+        } else if (kind === "video") {
+          const url = await vscode.window.showInputBox({
+            title: "Optional public HTTPS reference image URL",
+            value: "",
+            prompt:
+              "Leave empty for text-to-video. Local files are not uploaded or hosted; the model must support image2video.",
+            ignoreFocusOut: true,
+            validateInput: (value) => {
+              if (!value) return;
+              try {
+                validateReferenceUrl(value);
+                return;
+              } catch (error) {
+                return error.message;
+              }
+            },
+          });
+          if (url === undefined) return;
+          if (url)
+            params.images = [
+              ...(params.images || []),
+              validateReferenceUrl(url),
+            ];
+        }
+        const confirmed = await vscode.window.showWarningMessage(
+          `Submit one paid ${kind} request using ${model}? Apixly pricing and model limits apply. Cancelling polling does not cancel the upstream task or its charges.`,
+          { modal: true },
+          "Submit paid request",
+        );
+        if (confirmed !== "Submit paid request") {
+          return;
+        }
+        if (kind === "video") await validateVideoReferences(api, model, params);
+        const submitted =
+          kind === "image"
+            ? await api.submitImage({ model, prompt, params, refs, mask })
+            : await api.submitVideo({ model, prompt, params });
+        job = {
+          id: submitted.id,
+          kind,
+          model,
+          status: submitted.status,
+          submittedAt: Date.now(),
+        };
+        // Display the task ID before persistence so a storage error cannot hide it.
+        vscode.window.showInformationMessage(
+          `Apixly submitted ${kind}. Task ID: ${job.id}. Resume Task can recover it after a reload.`,
+        );
+        await remember(job);
+      } finally {
+        submitting = false;
       }
-      const confirmed = await vscode.window.showWarningMessage(
-        `Submit one paid ${kind} request using ${model}? Apixly pricing and model limits apply. Cancelling polling does not cancel the upstream task or its charges.`,
-        { modal: true },
-        "Submit paid request",
-      );
-      if (confirmed !== "Submit paid request") {
-        return;
+      if (job) {
+        await follow(api, job);
       }
-      if (kind === "video") await validateVideoReferences(api, model, params);
-      const submitted =
-        kind === "image"
-          ? await api.submitImage({ model, prompt, params, refs, mask })
-          : await api.submitVideo({ model, prompt, params });
-      job = {
-        id: submitted.id,
-        kind,
-        model,
-        status: submitted.status,
-        submittedAt: Date.now(),
-      };
-      // Display the task ID before persistence so a storage error cannot hide it.
-      vscode.window.showInformationMessage(
-        `Apixly submitted ${kind}. Task ID: ${job.id}. Resume Task can recover it after a reload.`,
-      );
-      await remember(job);
     } finally {
-      submitting = false;
-    }
-    if (job) {
-      await follow(api, job);
+      release();
     }
   }
 
@@ -418,13 +430,13 @@ function createCommands(context, vscode, options = {}) {
       if (key === undefined) {
         return;
       }
-      await context.secrets.store(KEY, key.trim());
+      await credentials.setManual(key.trim());
       vscode.window.showInformationMessage(
         "Apixly API key saved in VS Code SecretStorage.",
       );
     },
     clearApiKey: async () => {
-      await context.secrets.delete(KEY);
+      await credentials.clearManual();
       vscode.window.showInformationMessage(
         "Apixly API key removed from VS Code SecretStorage.",
       );
@@ -434,19 +446,30 @@ function createCommands(context, vscode, options = {}) {
     generateVideo: () => generate("video"),
     resumeTask: async () => {
       trusted();
-      const job = await chooseTask();
-      if (job) {
-        await follow(await client(), job);
+      const release = credentials.hold();
+      try {
+        const job = await chooseTask();
+        if (job) {
+          await follow(await client(), job);
+        }
+      } finally {
+        release();
       }
     },
     checkTask: async () => {
       trusted();
-      const job = await chooseTask();
-      if (job) {
-        await follow(await client(), job, true);
+      const release = credentials.hold();
+      try {
+        const job = await chooseTask();
+        if (job) {
+          await follow(await client(), job, true);
+        }
+      } finally {
+        release();
       }
     },
   };
+  Object.defineProperty(actions, "credentials", { value: credentials });
   for (const [name, action] of Object.entries(actions)) {
     context.subscriptions.push(
       vscode.commands.registerCommand(
@@ -521,15 +544,20 @@ function registerStudio(context, vscode, actions) {
       cacheRoot,
       actions,
       catalogResolver,
+      credentialSession: actions.credentials,
     });
     activeStudio = studio;
     const secretChanges = context.secrets.onDidChange?.((event) =>
       event.key === KEY ? studio.handle({ type: "ready" }) : undefined,
     );
+    const connectionChanges = actions.credentials?.subscribe(() =>
+      studio.handle({ type: "ready" }),
+    );
     context.subscriptions.push(
       panel.webview.onDidReceiveMessage((message) => studio.handle(message)),
       panel.onDidDispose(() => {
         secretChanges?.dispose();
+        connectionChanges?.dispose();
         activePanel = undefined;
         activeStudio = undefined;
         studio.dispose().catch(() => undefined);

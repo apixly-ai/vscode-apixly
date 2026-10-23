@@ -6,7 +6,7 @@
 
 Create images, refine them with references, and generate video inside VS Code. **Apixly Media Studio** brings your prompt, models, previews, and project files into one creative workspace.
 
-The extension is **free and open source**. It uses the paid [Apixly API](https://apixly.ai): bring your account, a standard API key, and sufficient balance. A ChatGPT or Claude subscription is not an Apixly API key.
+The extension is **free and open source**. Connect your [Apixly account](https://apixly.ai) in your regular browser, or enter a standard API key. Generation uses your Apixly balance. A ChatGPT or Claude subscription is not an Apixly API key.
 
 Image generation starts at US$0.02 per image for selected models/settings. Check current prices in the [model catalog](https://platform.apixly.ai/models).
 
@@ -31,12 +31,14 @@ The gallery uses actual outputs from release acceptance on October 23, 2026. Its
 
 1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=apixly.apixly-media), or [download the VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest) and use **Extensions: Install from VSIX**. Open a trusted **local** workspace folder in VS Code 1.109 or later.
 2. Run **Apixly Media: Open Media Studio** from the Command Palette.
-3. New to Apixly? [Create an account and get an API key](https://platform.apixly.ai/keys), then choose **Connect API key** in the panel. Your key is entered in VS Code's secure input, never in the Webview.
-4. Choose **Image**, **Edit image**, or **Video**. Enter your prompt, an exact model ID, and any needed parameters. The panel starts with qualified model suggestions; you can enter another exact ID. No model is substituted after submission.
+3. Choose **Connect Apixly account**. Sign in and approve the displayed code on apixly.ai using your existing account. Your **Studixly Key** is the default; the account area's **API Key** dropdown lets you choose another active Key you already own. Alternatively, choose **Use manual API key** and enter it in VS Code's native secure input, never in the Webview.
+4. Choose **Image**, **Edit image**, or **Video**. Open **Available models** to load the complete catalog for your selected Key, then enter your prompt and any needed parameters. You can still enter an exact model ID manually. Changing Key or refreshing the catalog never silently changes that ID.
 5. Choose local references for an image edit, or attach a public HTTPS image URL for reference video. A generated image's **Use for video** button fills a reference-capable preset for you to review; it never submits automatically. **Generate** submits a paid API request; the extension itself is free.
 6. Preview the finished image or video and select **Save to project**. You choose the destination, and existing files are preserved.
 
 Explore [apixly.ai](https://apixly.ai) for the full creative studio. Compare [models and public prices](https://platform.apixly.ai/models), manage [API keys](https://platform.apixly.ai/keys), review [usage and billing](https://platform.apixly.ai/usage/logs), or read the [API documentation](https://apixly.ai/docs). These links are also available in the panel's account area.
+
+Account connection, Key selection and model browsing do not generate media. The extension stores a revocable connection token in SecretStorage; your website password, website login token and underlying account API Key never enter the extension. **Disconnect account** revokes this plugin connection. It does not change your website account or remove a separately saved manual Key. Switching credentials is blocked while a task is being submitted or checked; stop local waiting first. If a selected Key expires or is removed, choose another active owned Key explicitly. The extension never falls back to a different Key or model on its own.
 
 ## Direct the look before you generate
 
@@ -55,7 +57,7 @@ These are **AI prompt instructions**, not a physical light simulation, calibrate
 | Command | Action |
 | --- | --- |
 | Open Media Studio | Open the visual workspace for generation, editing, previews, progress, and task recovery. |
-| Set API Key | Store a standard API key using VS Code SecretStorage. |
+| Set API Key | Store a standard API key using VS Code SecretStorage and explicitly select manual Key mode. |
 | Clear API Key | Remove that key from SecretStorage. |
 | Generate Image | Submit one asynchronous image request, then wait for the result. |
 | Edit Image with References | Select one or more reference images, then submit one edit request. |
@@ -107,7 +109,7 @@ Task IDs are not persisted until the API returns one. If submission succeeds but
 
 Your key lives in VS Code SecretStorage. Prompts and selected references go to Apixly and its upstream provider. Result URLs may use third-party storage; those downloads never receive your API key. Selected reference thumbnails and finished previews use a temporary, private folder under VS Code extension storage. Closing the panel removes that panel's preview cache; saved project files remain. No analytics or advertising is included. Read [PRIVACY.md](PRIVACY.md).
 
-The API base is fixed at `https://apixly.ai/v1`. This release uses standard REST API keys, not signed MCP tokens. It supports desktop VS Code with local workspace folders. Remote/virtual workspaces and VS Code for the Web are not supported in this release. It does not provide a coding agent or register a chat model provider.
+The API base is fixed at `https://apixly.ai/v1` in manual Key mode and `https://apixly.ai/api/integrations/v1` in account mode. The first-party account relay resolves your selected owned Key on the server. This release does not use signed MCP tokens. It supports desktop VS Code with local workspace folders. Remote/virtual workspaces and VS Code for the Web are not supported in this release. It does not provide a coding agent or register a chat model provider.
 
 ## Develop and package
 

@@ -10,6 +10,8 @@
   let mode = "image";
   let busy = false;
   let hasKey = false;
+  let connectionState = {};
+  let connecting = false;
   let references = [];
   let videoReferences = [];
   let catalog = [];
@@ -48,9 +50,23 @@
     $("aspect-ratio").disabled = value || referenceGeometry();
     $("resolution").disabled = value || referenceGeometry();
     $("refresh-catalog").disabled = value || !hasKey;
+    for (const button of document.querySelectorAll(
+      '[data-action="connectAccount"],[data-action="setKey"],[data-action="clearKey"],[data-action="useManualKey"],[data-action="disconnectAccount"],[data-action="refreshAccount"]',
+    ))
+      button.disabled = value || Boolean(connectionState.busy) || connecting;
+    $("account-key").disabled =
+      value || Boolean(connectionState.busy) || connecting;
+    $("refresh-account").disabled ||=
+      connectionState.mode !== "account" || !connectionState.hasConnection;
+    $("disconnect-account").disabled ||=
+      connectionState.mode !== "account" || !connectionState.hasConnection;
     creativeUI?.setBusy(value);
     $("generate").disabled =
-      value || !hasKey || (creativeUI && !creativeUI.canSubmit());
+      value ||
+      connecting ||
+      Boolean(connectionState.busy) ||
+      !hasKey ||
+      (creativeUI && !creativeUI.canSubmit());
     $("generate-label").textContent = value
       ? "Working on your asset…"
       : mode === "video"
@@ -58,6 +74,54 @@
         : mode === "edit"
           ? "Edit image"
           : "Generate image";
+  }
+  function renderConnection(value) {
+    connectionState = value || {};
+    connecting = Boolean(connectionState.connecting);
+    const account = connectionState.account;
+    const bound = connectionState.mode === "account" && account;
+    const selectableAccount =
+      connectionState.mode === "account" && connectionState.hasConnection;
+    $("connection").textContent = connectionState.error
+      ? "Connection needs attention"
+      : bound
+        ? "Apixly account connected"
+        : hasKey
+          ? "API key saved"
+          : "Connect your account";
+    $("account-summary").textContent =
+      connectionState.error ||
+      (bound
+        ? `${account.account.name || account.account.email || "Apixly account"} · ${account.selected_key.name} · ${account.selected_key.masked}`
+        : hasKey
+          ? "Manual API key configured in SecretStorage."
+          : "Connect your Apixly account, or configure a manual API key.");
+    $("account-summary").classList.toggle(
+      "catalog-error",
+      Boolean(connectionState.error),
+    );
+    $("account-key-section").classList.toggle("hidden", !selectableAccount);
+    const keys = Array.isArray(connectionState.keys)
+      ? connectionState.keys
+      : [];
+    const selectedId = bound ? String(account.selected_key.id) : "";
+    const options = keys.map((key) => {
+      const option = document.createElement("option");
+      option.value = String(key.id);
+      option.textContent = `${key.name}${key.is_default ? " (default)" : ""} · ${key.masked}`;
+      return option;
+    });
+    if (!keys.some((key) => String(key.id) === selectedId)) {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Choose an active API Key";
+      options.unshift(placeholder);
+    }
+    $("account-key").replaceChildren(...options);
+    if (bound) $("account-key").value = String(account.selected_key.id);
+    $("authorization-progress").classList.toggle("hidden", !connecting);
+    $("connection").classList.toggle("connected", hasKey);
+    $("onboarding").classList.toggle("hidden", hasKey);
   }
   function renderCatalogStatus(count) {
     $("catalog-status").textContent = catalogState.error
@@ -245,6 +309,10 @@
     modelOptions();
   });
   $("refresh-catalog").addEventListener("click", () => send("refreshCatalog"));
+  $("account-key").addEventListener("change", () => {
+    if ($("account-key").value)
+      send("selectAccountKey", { keyId: $("account-key").value });
+  });
   $("prompt").addEventListener("input", () => {
     $("prompt-count").textContent =
       `${$("prompt").value.length.toLocaleString()} / 20,000`;
@@ -377,14 +445,19 @@
         "hidden",
         !videoReferences.length,
       );
-      $("connection").textContent = hasKey
-        ? "API key saved"
-        : "Connect your API key";
-      $("connection").classList.toggle("connected", hasKey);
-      $("onboarding").classList.toggle("hidden", hasKey);
+      renderConnection(message.connection);
       renderHistory();
       renderReferences();
       creativeUI?.setReference(references[0]?.previewUri);
+      setBusy(busy);
+    } else if (message.type === "authorization") {
+      connecting = true;
+      $("settings").open = true;
+      $("authorization-code").textContent = message.userCode;
+      $("authorization-expiry").textContent =
+        `Expires at ${new Date(message.expiresAt).toLocaleTimeString()}. Waiting here does not generate media.`;
+      $("authorization-progress").classList.remove("hidden");
+      $("authorization-progress").scrollIntoView({ block: "nearest" });
       setBusy(busy);
     } else if (message.type === "videoPreset") {
       setMode("video");

@@ -67,6 +67,37 @@ test("registers discoverable media commands and only SecretStorage holds API key
   assert.equal(f.values.size, 0);
 });
 
+test("classic commands use the selected account provider and hold credentials until their operation ends", async () => {
+  const f = fixture();
+  let resolved = 0,
+    holds = 0,
+    released = 0;
+  const credentials = {
+    resolve: async () => {
+      resolved++;
+      return { client: {} };
+    },
+    hold: () => {
+      holds++;
+      return () => {
+        released++;
+      };
+    },
+  };
+  f.context.secrets.get = async () => {
+    throw Error("classic commands must use the active account provider");
+  };
+  f.vscode.window.showInputBox = async () => undefined;
+  const actions = createCommands(f.context, f.vscode, { credentials });
+  assert.equal(actions.credentials, credentials);
+  assert.equal(f.registered.size, 7);
+  await f.registered.get("apixlyMedia.generateImage")();
+  assert.equal(resolved, 1);
+  assert.equal(holds, 1);
+  assert.equal(released, 1);
+  assert.equal(f.notices.length, 0);
+});
+
 test("untrusted workspace cannot submit paid generation or read a secret", async () => {
   const f = fixture();
   f.vscode.workspace.isTrusted = false;

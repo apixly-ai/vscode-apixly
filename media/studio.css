@@ -1184,3 +1184,44 @@ body.vscode-high-contrast textarea {
 .catalog-error {
   color: var(--vscode-errorForeground, #fca5a5);
 }
+
+.account-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.account-heading p {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.account-badge {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.authorization-progress {
+  border: 1px solid #2e8fff55;
+  border-radius: 12px;
+  padding: 14px;
+  background: #2e8fff0c;
+  margin: 14px 0;
+}
+.authorization-code {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  color: #2e8fff;
+  overflow-wrap: anywhere;
+}
+.manual-settings {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 14px;
+}
+#account-key-section {
+  margin-top: 16px;
+}

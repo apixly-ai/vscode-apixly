@@ -129,7 +129,15 @@ async function limitedBytes(response, maximum) {
   return Buffer.concat(chunks, total);
 }
 
-function createClient(key, fetcher = globalThis.fetch) {
+function createClient(
+  key,
+  fetcher = globalThis.fetch,
+  { mode = "manual" } = {},
+) {
+  if (!["manual", "account"].includes(mode))
+    throw fail("Unsupported credential mode.");
+  const base =
+    mode === "account" ? "https://apixly.ai/api/integrations/v1" : BASE;
   if (typeof key !== "string" || !key.trim() || /[\r\n]/.test(key)) {
     throw fail("Set an Apixly API key first.");
   }
@@ -153,7 +161,7 @@ function createClient(key, fetcher = globalThis.fetch) {
       if (!response.ok) {
         let detail = "";
         if (
-          String(url).startsWith(`${BASE}/`) &&
+          String(url).startsWith(`${base}/`) &&
           response.headers.get("content-type")?.includes("json")
         ) {
           try {
@@ -224,7 +232,7 @@ function createClient(key, fetcher = globalThis.fetch) {
       headers["content-type"] = "application/json";
     }
     const result = await request(
-      `${BASE}${route}`,
+      `${base}${route}`,
       {
         method,
         headers,
@@ -398,7 +406,7 @@ function createClient(key, fetcher = globalThis.fetch) {
       let url;
       const headers = {};
       if (!asset.url && job.kind === "video") {
-        url = `${BASE}/videos/${encodeURIComponent(validateIdentity(job.id, "task ID"))}/content`;
+        url = `${base}/videos/${encodeURIComponent(validateIdentity(job.id, "task ID"))}/content`;
         headers.authorization = `Bearer ${key}`;
         headers["user-agent"] = CLIENT_AGENT;
       } else {

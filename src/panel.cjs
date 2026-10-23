@@ -5,6 +5,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { composeCreativePrompt } = require("../media/creative-controls.js");
 const { renderCreativePanel } = require("./creative-panel.cjs");
+const { renderAccountPanel } = require("./account-panel.cjs");
 const {
   parseModelCatalog,
   parseVideoConfig,
@@ -41,6 +42,11 @@ const SIMPLE = new Set([
   "clearVideoReferences",
   "requestCatalog",
   "refreshCatalog",
+  "connectAccount",
+  "cancelConnection",
+  "disconnectAccount",
+  "refreshAccount",
+  "useManualKey",
 ]);
 const IMAGE_TYPES = {
   png: "image/png",
@@ -100,6 +106,15 @@ function validateMessage(message) {
     exactKeys(message, ["type", "link"]);
     if (!Object.hasOwn(LINKS, message.link))
       throw problem("Unknown Apixly link.");
+    return message;
+  }
+  if (message.type === "selectAccountKey") {
+    exactKeys(message, ["type", "keyId"]);
+    if (
+      typeof message.keyId !== "string" ||
+      !(message.keyId === "studixly" || /^[1-9]\d{0,19}$/.test(message.keyId))
+    )
+      throw problem("Choose an active API Key you own.");
     return message;
   }
   if (message.type === "addVideoUrl") {
@@ -168,8 +183,7 @@ function renderHtml({
 <body><div class="app-shell">
 <header class="topbar"><a class="brand" href="https://apixly.ai" data-link="home"><img src="${escaped(logoUri)}" alt="Apixly" width="34" height="34"><span>apixly<span class="brand-tag">MEDIA STUDIO</span></span></a><div class="top-actions"><span id="connection" class="connection">Checking connection</span><button id="settings-toggle" class="icon-button" aria-label="Open account settings" title="Account settings">⚙</button></div></header>
 <section class="intro"><p class="eyebrow">FROM IDEA TO PROJECT ASSET</p><h1>Create images. <span>Bring them to life.</span></h1><p class="intro-copy">Generate and edit with apixly.ai, then save finished assets straight into your project.</p></section>
-<section id="onboarding" class="onboarding glass hidden"><div class="onboarding-icon">✦</div><div><h2>Your next idea starts here</h2><p>Create an Apixly account, get an API key, then connect it securely.</p><div class="inline-actions"><a class="button primary compact" href="https://platform.apixly.ai/keys" data-link="console">Get an API key ↗</a><button class="button secondary compact" data-action="setKey">Connect API key</button></div><p class="fine-print">Free extension · API usage is billed by Apixly. No subscription is included.</p></div></section>
-<details id="settings" class="settings glass"><summary>Account & resources</summary><div class="settings-content"><p>Your key stays in VS Code SecretStorage. Prompts and selected references are sent to Apixly and the chosen model service.</p><div class="inline-actions"><button class="button secondary compact" data-action="setKey">Set / change API key</button><button class="button ghost compact" data-action="clearKey">Remove key</button></div><nav class="resource-links" aria-label="Apixly resources"><a href="https://apixly.ai" data-link="home">apixly.ai ↗</a><a href="https://platform.apixly.ai/models" data-link="models">Models & prices ↗</a><a href="https://platform.apixly.ai/keys" data-link="console">API console ↗</a><a href="https://platform.apixly.ai/usage/logs" data-link="usage">Usage & billing ↗</a><a href="https://apixly.ai/docs" data-link="docs">API docs ↗</a></nav></div></details>
+${renderAccountPanel()}
 <main class="workspace-grid"><section class="composer glass"><div class="section-label"><span>01 / CREATE</span><a href="https://platform.apixly.ai/models" data-link="models">Explore models ↗</a></div>
 <div class="mode-tabs" role="tablist" aria-label="Creation type"><button class="mode-tab active" role="tab" aria-selected="true" data-mode="image">✦ Image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="edit">◈ Edit image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="video">▷ Video</button></div>
 <form id="creation-form"><div class="catalog-heading"><label for="model-picker">Available models</label><button id="refresh-catalog" type="button" class="button ghost compact">Refresh models</button></div><select id="model-picker" aria-label="Available models"><option value="">Enter an exact model ID</option></select><p id="catalog-status" class="field-hint" role="status">Open the picker to load models for your selected key.</p><label for="model">Exact model ID <span class="label-hint">Editable · never silently replaced</span></label><input id="model" name="model" list="model-options" value="grok-imagine-image" placeholder="Choose or enter a model ID" required maxlength="200" autocomplete="off"><datalist id="model-options"></datalist><p id="model-hint" class="field-hint">Choose any image model available to your Apixly key.</p>
@@ -192,6 +206,7 @@ function createStudio({
   clientFactory = createClient,
   actions,
   catalogResolver = createCatalogResolver(),
+  credentialSession,
 }) {
   let selected = [];
   let videoReferences = [];
@@ -208,14 +223,32 @@ function createStudio({
       : Promise.resolve(webview.postMessage(message));
   const tasks = () => context.globalState.get("apixlyMedia.tasks", []);
   async function api() {
+    if (credentialSession) return (await credentialSession.resolve()).client;
     const key = await context.secrets.get("apixlyMedia.apiKey");
     if (!key) throw problem("Connect an Apixly API key to start creating.");
     return clientFactory(key);
   }
-  async function state() {
+  async function state({ refreshAccount = false } = {}) {
+    let connection;
+    if (credentialSession) {
+      try {
+        connection = await credentialSession.view({ refresh: refreshAccount });
+      } catch (error) {
+        connection = {
+          ...(await credentialSession.view()),
+          hasCredential: false,
+          error: error.safe
+            ? error.message
+            : "Could not refresh your account. Reconnect or try again.",
+        };
+      }
+    }
     await send({
       type: "state",
-      hasKey: Boolean(await context.secrets.get("apixlyMedia.apiKey")),
+      hasKey: connection
+        ? connection.hasCredential
+        : Boolean(await context.secrets.get("apixlyMedia.apiKey")),
+      ...(connection ? { connection } : {}),
       tasks: tasks().map(taskRecord),
       references: selected.map((item) => ({
         name: item.name,
@@ -353,6 +386,7 @@ function createStudio({
       );
     if (!vscode.workspace.isTrusted)
       throw problem("Open a trusted workspace to use Apixly Media.");
+    const release = credentialSession?.hold();
     busy = true;
     await send({ type: "busy", value: true });
     try {
@@ -405,6 +439,7 @@ function createStudio({
       }
       await finish(apiClient, job);
     } finally {
+      release?.();
       busy = false;
       controller = undefined;
       await send({ type: "busy", value: false });
@@ -452,9 +487,14 @@ function createStudio({
   }
   async function publishCatalog({ cachedOnly = false, force = false } = {}) {
     const epoch = ++catalogEpoch;
-    const key = await context.secrets.get("apixlyMedia.apiKey");
+    const connected = credentialSession
+      ? await credentialSession.view()
+      : undefined;
+    const key = credentialSession
+      ? undefined
+      : await context.secrets.get("apixlyMedia.apiKey");
     if (disposed || epoch !== catalogEpoch) return;
-    if (!key) {
+    if (connected ? !connected.hasCredential : !key) {
       if (activeCatalogIdentity)
         catalogResolver.invalidate(activeCatalogIdentity);
       activeCatalogIdentity = undefined;
@@ -467,7 +507,13 @@ function createStudio({
       });
       return;
     }
-    const identity = catalogIdentity({ mode: "manual", key });
+    const resolved = credentialSession
+      ? await credentialSession.resolve({ refreshAccount: force })
+      : undefined;
+    if (disposed || epoch !== catalogEpoch) return;
+    const identity = resolved
+      ? resolved.identity
+      : catalogIdentity({ mode: "manual", key });
     if (activeCatalogIdentity && activeCatalogIdentity !== identity)
       catalogResolver.invalidate(activeCatalogIdentity);
     activeCatalogIdentity = identity;
@@ -488,7 +534,7 @@ function createStudio({
     const status = await catalogResolver.read(
       identity,
       async () => {
-        const client = clientFactory(key);
+        const client = resolved ? resolved.client : clientFactory(key);
         const results = await Promise.allSettled([
           typeof client.modelCatalog === "function"
             ? client.modelCatalog()
@@ -524,8 +570,42 @@ function createStudio({
       try {
         const message = validateMessage(raw);
         if (message.type === "ready") {
-          await state();
+          await state({ refreshAccount: Boolean(credentialSession) });
           await publishCatalog({ cachedOnly: true });
+        } else if (
+          [
+            "connectAccount",
+            "cancelConnection",
+            "disconnectAccount",
+            "refreshAccount",
+            "selectAccountKey",
+            "useManualKey",
+          ].includes(message.type)
+        ) {
+          if (!credentialSession)
+            throw problem("Account connection is unavailable in this host.");
+          try {
+            if (message.type === "cancelConnection")
+              credentialSession.cancelConnect();
+            else if (message.type === "connectAccount")
+              await credentialSession.connect({
+                openExternal: (url) =>
+                  vscode.env.openExternal(
+                    vscode.Uri.parse ? vscode.Uri.parse(url) : url,
+                  ),
+                onPending: (flow) => send({ type: "authorization", ...flow }),
+              });
+            else if (message.type === "disconnectAccount")
+              await credentialSession.disconnect();
+            else if (message.type === "refreshAccount")
+              await credentialSession.refresh();
+            else if (message.type === "selectAccountKey")
+              await credentialSession.selectKey(message.keyId);
+            else await credentialSession.useManual();
+          } finally {
+            await state();
+            await publishCatalog({ cachedOnly: true });
+          }
         } else if (
           message.type === "requestCatalog" ||
           message.type === "refreshCatalog"
@@ -623,6 +703,7 @@ function createStudio({
       }
     },
     async dispose() {
+      credentialSession?.cancelConnect?.();
       disposed = true;
       catalogEpoch++;
       controller?.abort();

@@ -145,6 +145,7 @@ async function setup(t, options = {}) {
         return client;
       }),
     catalogResolver: options.catalogResolver,
+    credentialSession: options.credentialSession,
     actions: {
       setApiKey: async () => undefined,
       clearApiKey: async () => undefined,
@@ -774,4 +775,161 @@ test("video configuration failure keeps authoritative images and same-identity l
   assert.deepEqual(catalog.models, models);
   assert.deepEqual(catalog.videos, [cap]);
   assert(catalog.error);
+});
+
+test("account panel accepts only typed metadata actions, reuses the active provider, and never receives credentials", async (t) => {
+  const actions = [],
+    copied = [],
+    keys = [
+      { id: "7", name: "Owned quota", masked: "sk…7", is_default: false },
+    ];
+  const connection = {
+    connection_id: "c",
+    account: { id: "42", name: "QA", email: "qa@example.test" },
+    selected_key: keys[0],
+    selection_revision: 2,
+    expires_at: "2027-01-01",
+  };
+  let selected = 0;
+  const session = {
+    view: async () => ({
+      mode: "account",
+      hasCredential: true,
+      account: connection,
+      keys,
+    }),
+    resolve: async () => ({
+      identity: `account:${"a".repeat(64)}`,
+      client: {
+        models: async () => [{ id: "seedream-5-0", type: "image" }],
+        videoCapabilities: async () => [],
+      },
+    }),
+    selectKey: async (id) => {
+      selected++;
+      actions.push(["select", id]);
+    },
+    refresh: async () => {
+      actions.push(["refresh"]);
+    },
+    disconnect: async () => {
+      actions.push(["disconnect"]);
+    },
+    connect: async ({ openExternal, onPending }) => {
+      await onPending({
+        userCode: "ABCD",
+        verificationUri: "https://apixly.ai/connect/a",
+        expiresAt: 10000,
+        intervalMs: 5000,
+      });
+      await openExternal("https://apixly.ai/connect/a");
+    },
+    cancelConnect: () => {
+      actions.push(["cancel"]);
+    },
+    useManual: async () => {
+      actions.push(["manual"]);
+    },
+  };
+  const f = await setup(t, { credentialSession: session });
+  f.context.secrets.get = async () => {
+    throw Error("panel must not read raw account secrets");
+  };
+  f.vscode.env.openExternal = async (url) => {
+    copied.push(String(url));
+    return true;
+  };
+  await f.studio.handle({ type: "ready" });
+  const state = f.messages.filter((m) => m.type === "state").at(-1);
+  assert.deepEqual(state.connection.account, connection);
+  assert.equal(state.hasKey, true);
+  await f.studio.handle({ type: "selectAccountKey", keyId: "7" });
+  assert.equal(selected, 1);
+  for (const type of [
+    "refreshAccount",
+    "connectAccount",
+    "cancelConnection",
+    "disconnectAccount",
+    "useManualKey",
+  ])
+    await f.studio.handle({ type });
+  assert(copied.includes("https://apixly.ai/connect/a"));
+  assert(
+    f.messages.some((m) => m.type === "authorization" && m.userCode === "ABCD"),
+  );
+  await f.studio.handle({ type: "requestCatalog" });
+  assert.equal(
+    f.messages.filter((m) => m.type === "catalog").at(-1).models[0].id,
+    "seedream-5-0",
+  );
+  for (const bad of [
+    { type: "connectAccount", password: "secret" },
+    { type: "selectAccountKey", keyId: "7", token: "secret" },
+    { type: "selectAccountKey", keyId: "../foreign" },
+  ])
+    assert.throws(() => validateMessage(bad));
+  assert(!JSON.stringify(f.messages).includes("Bearer"));
+  const html = renderHtml({
+    cspSource: "resource:",
+    scriptUri: "studio.js",
+    styleUri: "studio.css",
+    nonce: "n",
+  });
+  for (const id of [
+    "account-key",
+    "account-summary",
+    "authorization-code",
+    "authorization-progress",
+  ])
+    assert(html.includes(`id="${id}"`));
+  assert(html.includes('data-action="connectAccount"'));
+  assert(html.includes('data-action="cancelConnection"'));
+  assert(html.includes('data-action="disconnectAccount"'));
+  assert(html.includes('data-action="useManualKey"'));
+  assert(!html.includes('type="password"'));
+});
+
+test("failed account Key selection restores authoritative metadata instead of leaving a phantom UI choice", async (t) => {
+  let reads = 0;
+  const f = await setup(t, {
+    credentialSession: {
+      view: async () => {
+        reads++;
+        return {
+          mode: "account",
+          hasCredential: true,
+          account: { selected_key: { id: "studixly" } },
+          keys: [],
+        };
+      },
+      selectKey: async () => {
+        throw Object.assign(Error("Key unavailable"), { safe: true });
+      },
+      resolve: async () => ({
+        identity: `account:${"a".repeat(64)}`,
+        client: {},
+      }),
+    },
+  });
+  await f.studio.handle({ type: "selectAccountKey", keyId: "7" });
+  assert(reads > 0);
+  assert.equal(
+    f.messages.filter((m) => m.type === "state").at(-1).connection.account
+      .selected_key.id,
+    "studixly",
+  );
+  assert(f.messages.some((m) => m.type === "error"));
+});
+
+test("closing Studio cancels only its pending local account authorization", async (t) => {
+  let cancelled = 0;
+  const f = await setup(t, {
+    credentialSession: {
+      cancelConnect: () => {
+        cancelled++;
+      },
+    },
+  });
+  await f.studio.dispose();
+  assert.equal(cancelled, 1);
 });
