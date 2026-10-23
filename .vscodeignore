@@ -7,3 +7,6 @@ package-lock.json
 *.vsix
 coverage/**
 biome.json
+media/source/**
+media/social-preview.png
+docs/**

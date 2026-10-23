@@ -1,16 +1,35 @@
 # Apixly Media
 
-Your creative workspace for images, reference edits, and video—inside VS Code. Open the Apixly Media Studio panel, describe your idea, preview the result, then save it directly into your project.
+**[Download VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest)** · **[Get an API key](https://platform.apixly.ai/keys)** · **[Models & prices](https://platform.apixly.ai/models)** · **[apixly.ai](https://apixly.ai)**
+
+[![Apixly Media for VS Code: create images, edit with references, generate video, and save assets into your project](media/hero.png)](https://apixly.ai)
+
+Create images, refine them with references, and generate video inside VS Code. **Apixly Media Studio** brings your prompt, models, previews, and project files into one creative workspace.
+
+The extension is **free and open source**. It uses the paid [Apixly API](https://apixly.ai): bring your account, a standard API key, and sufficient balance. A ChatGPT or Claude subscription is not an Apixly API key.
 
 Image generation starts at US$0.02 per image for selected models/settings. Check current prices in the [model catalog](https://platform.apixly.ai/models).
 
+## Your studio, inside your editor
+
 ![Apixly Media Studio in VS Code with a finished reference video and project save controls](media/studio-preview.png)
 
-This extension uses the paid [Apixly API](https://apixly.ai). You need an Apixly account, a **standard API key**, and sufficient balance. The extension is free and open source; model usage is billed by Apixly. A ChatGPT or Claude subscription is not an Apixly API key.
+The actual VS Code panel, showing a finished reference video and **Save to project**. Your key stays in SecretStorage; generated media goes where you choose.
+
+## From an idea to a finished asset
+
+![Actual release samples: a generated red cube edited blue, two references combined, a mountain-lake video frame, and the existing-task recovery flow](media/workflow.png)
+
+- **Generate an image.** Choose an exact model, describe your idea, and preview the finished result.
+- **Edit with references.** Pick one or several local images and explain what to change, combine, or preserve. Start with `gemini-3.1-flash-image` for the qualified reference-edit workflow.
+- **Add motion.** Generate a text video or use a supported public image reference. A finished image's **Use for video** action prepares an explicit preset for you to review before submitting.
+- **Keep your place.** Stop waiting locally and resume with the same task ID. Recovery checks the existing task without submitting a new generation.
+
+The gallery uses actual outputs from release acceptance on October 23, 2026. Its video image is a still frame, and the recovery strip is an explanatory diagram. The Studio screenshot is an unedited native capture. Model behavior varies; masked editing is unavailable, and qualified reference-video framing follows its input image.
 
 ## Start
 
-1. Install the extension and open a trusted **local** workspace folder in VS Code 1.109 or later.
+1. [Download the latest VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest), run **Extensions: Install from VSIX**, and open a trusted **local** workspace folder in VS Code 1.109 or later.
 2. Run **Apixly Media: Open Media Studio** from the Command Palette.
 3. New to Apixly? [Create an account and get an API key](https://platform.apixly.ai/keys), then choose **Connect API key** in the panel. Your key is entered in VS Code's secure input, never in the Webview.
 4. Choose **Image**, **Edit image**, or **Video**. Enter your prompt, an exact model ID, and any needed parameters. The panel starts with qualified model suggestions; you can enter another exact ID. No model is substituted after submission.
