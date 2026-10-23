@@ -1050,3 +1050,51 @@ test("transient account metadata errors retain stale same-identity models; inval
   assert.equal(last.available, false);
   assert.equal(last.clear, true);
 });
+
+test("an unidentified replacement connection cannot recover the previous account's stale catalog after metadata failure", async (t) => {
+  let metadata = {
+    connection_id: "A",
+    account: { id: "A" },
+    selected_key: { id: "studixly" },
+    selection_revision: 1,
+  };
+  let failure = false;
+  const session = {
+    view: async () => ({
+      mode: "account",
+      hasConnection: true,
+      hasCredential: true,
+      account: metadata,
+      keys: [],
+    }),
+    resolve: async () => {
+      if (failure) throw Error("new account metadata unavailable");
+      return {
+        identity: require("../src/catalog-cache.cjs").catalogIdentity({
+          mode: "account",
+          connectionId: "A",
+          accountId: "A",
+          keyId: "studixly",
+          revision: 1,
+        }),
+        client: {
+          models: async () => [{ id: "only-account-A", type: "image" }],
+          videoCapabilities: async () => [],
+        },
+      };
+    },
+  };
+  const f = await setup(t, { credentialSession: session });
+  await f.studio.handle({ type: "requestCatalog" });
+  assert.equal(
+    f.messages.filter((m) => m.type === "catalog").at(-1).models[0].id,
+    "only-account-A",
+  );
+  metadata = null;
+  failure = true;
+  await f.studio.handle({ type: "requestCatalog" });
+  const last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.available, false);
+  assert.equal(last.clear, true);
+  assert.deepEqual(last.models, []);
+});

@@ -517,6 +517,8 @@ function createStudio({
       await clear();
       return;
     }
+    if (accountMode && !connected.account && activeCatalogIdentity)
+      await clear();
     if (
       activeCatalogIdentity &&
       connected &&
