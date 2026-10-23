@@ -34,6 +34,103 @@
   const wrap = (value) => ((value % 360) + 360) % 360;
   const clamp = (value) => Math.max(-90, Math.min(90, value));
   const initialTools = () => clone(defaults);
+  function cycleOption(values, current, direction) {
+    if (!values.length) return "";
+    const index = Math.max(0, values.indexOf(current));
+    return values[
+      (((index + direction) % values.length) + values.length) % values.length
+    ];
+  }
+  function parseHexColor(value) {
+    if (typeof value !== "string" || !/^#[0-9A-Fa-f]{6}$/.test(value))
+      throw new Error("Enter a complete light color in #RRGGBB form.");
+    return value;
+  }
+  function syncLightColorInputs(doc, color) {
+    for (const id of ["lighting-color", "lighting-color-hex"]) {
+      const input = doc.getElementById(id);
+      if (input !== doc.activeElement) input.value = color || "#2e8fff";
+    }
+    doc.getElementById("lighting-color-label").textContent =
+      color || "Unspecified";
+  }
+  function installPresetPresentation(doc) {
+    const $ = (id) => doc.getElementById(id);
+    const presets = [...doc.querySelectorAll("[data-preset-for]")];
+    const steppers = [...doc.querySelectorAll("[data-stepper]")];
+    const change = (node) =>
+      node.dispatchEvent(new root.Event("change", { bubbles: true }));
+    function refresh() {
+      for (const button of presets) {
+        const selected =
+          $(button.dataset.presetFor).value === button.dataset.presetValue;
+        button.setAttribute("aria-pressed", String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      }
+      for (const stepper of steppers) {
+        const id = stepper.dataset.stepper,
+          select = $(id);
+        const option = [...select.options].find(
+          (item) => item.value === select.value,
+        );
+        $(id + "-display").textContent =
+          id === "camera-focal" && select.value === "custom"
+            ? `${$("camera-focal-number").value} mm`
+            : option?.textContent || "Unspecified";
+      }
+    }
+    for (const button of presets) {
+      button.addEventListener("click", () => {
+        const select = $(button.dataset.presetFor);
+        select.value = button.dataset.presetValue;
+        change(select);
+        refresh();
+      });
+      button.addEventListener("keydown", (event) => {
+        const group = presets.filter(
+          (item) => item.dataset.presetFor === button.dataset.presetFor,
+        );
+        const direction = {
+          ArrowLeft: -1,
+          ArrowUp: -1,
+          ArrowRight: 1,
+          ArrowDown: 1,
+        }[event.key];
+        let index;
+        if (direction)
+          index =
+            (group.indexOf(button) + direction + group.length) % group.length;
+        else if (event.key === "Home") index = 0;
+        else if (event.key === "End") index = group.length - 1;
+        else return;
+        event.preventDefault();
+        group[index].focus();
+        group[index].click();
+      });
+    }
+    const step = (id, direction) => {
+      const select = $(id);
+      const values = [...select.options]
+        .map((item) => item.value)
+        .filter((value) => value !== "custom");
+      select.value = cycleOption(values, select.value, direction);
+      change(select);
+      refresh();
+    };
+    for (const button of doc.querySelectorAll("[data-step-for]"))
+      button.addEventListener("click", () =>
+        step(button.dataset.stepFor, Number(button.dataset.stepDir)),
+      );
+    for (const stepper of steppers)
+      stepper.addEventListener("keydown", (event) => {
+        const direction = { ArrowUp: -1, ArrowDown: 1 }[event.key];
+        if (!direction) return;
+        event.preventDefault();
+        step(stepper.dataset.stepper, direction);
+      });
+    refresh();
+    return { refresh };
+  }
   function disableAll(tools) {
     const copy = clone(tools);
     for (const group of Object.values(copy)) group.enabled = false;
@@ -97,6 +194,7 @@
       valid = true;
     let lastResult, lastError;
     const errors = new Map();
+    const presentation = installPresetPresentation(doc);
     const setValue = (id, value) => {
       const node = $(id);
       if (doc.activeElement !== node) node.value = String(value ?? "");
@@ -131,6 +229,7 @@
       }
       $("lighting-color").disabled =
         busy || !tools.lighting.enabled || !tools.lighting.color;
+      $("lighting-color-hex").disabled = $("lighting-color").disabled;
       for (const node of doc.querySelectorAll(
         "[data-creative-tab],#creative-off,#creative-reset",
       ))
@@ -160,10 +259,7 @@
         setValue("lighting-" + key + "-number", value);
       }
       $("lighting-color-enable").checked = Boolean(tools.lighting.color);
-      if (tools.lighting.color)
-        setValue("lighting-color", tools.lighting.color);
-      $("lighting-color-label").textContent =
-        tools.lighting.color || "Unspecified";
+      syncLightColorInputs(doc, tools.lighting.color);
       $("lighting-rimLight").checked = tools.lighting.rimLight;
       setValue("lighting-smartText", tools.lighting.smartText);
       for (const key of ["body", "lens", "aperture"])
@@ -177,6 +273,7 @@
             ? String(tools.camera.focal)
             : "custom",
       );
+      presentation.refresh();
       updateDisabled();
       draw("angle");
       draw("lighting");
@@ -304,13 +401,24 @@
         });
       }
     on("lighting-color-enable", "change", (event) => {
+      errors.delete("lighting-color-hex");
       tools.lighting.color = event.target.checked
         ? $("lighting-color").value
         : "";
       refresh();
     });
     on("lighting-color", "input", (event) => {
+      errors.delete("lighting-color-hex");
       tools.lighting.color = event.target.value;
+      refresh();
+    });
+    on("lighting-color-hex", "input", (event) => {
+      try {
+        tools.lighting.color = parseHexColor(event.target.value);
+        errors.delete("lighting-color-hex");
+      } catch (error) {
+        errors.set("lighting-color-hex", error.message);
+      }
       refresh();
     });
     on("lighting-rimLight", "change", (event) => {
@@ -452,6 +560,10 @@
   }
   return {
     initialTools,
+    cycleOption,
+    parseHexColor,
+    syncLightColorInputs,
+    installPresetPresentation,
     moveDirection,
     selectAnglePreset,
     disableAll,

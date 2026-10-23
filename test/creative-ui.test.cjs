@@ -9,7 +9,121 @@ const {
   projectPoint,
   showPreview,
   canSubmitPrompt,
+  cycleOption,
+  installPresetPresentation,
+  parseHexColor,
+  syncLightColorInputs,
 } = require("../media/creative-ui.js");
+test("Studixly-style lens steppers wrap both ways, preserve unspecified and accept custom-value fallback", () => {
+  const values = ["", "sony-venice", "red-v-raptor"];
+  assert.equal(cycleOption(values, "", -1), "red-v-raptor");
+  assert.equal(cycleOption(values, "red-v-raptor", 1), "");
+  assert.equal(cycleOption(values, "sony-venice", 1), "red-v-raptor");
+  assert.equal(cycleOption(["", "16", "24"], "42", 1), "16");
+  assert.equal(cycleOption([], "", 1), "");
+});
+
+test("preset cards and lens buttons update the existing typed controls exactly once and preserve neutral reset", () => {
+  const element = (dataset = {}) => ({
+    dataset,
+    handlers: {},
+    attributes: {},
+    value: "",
+    textContent: "",
+    options: [],
+    addEventListener(type, fn) {
+      this.handlers[type] = fn;
+    },
+    setAttribute(key, value) {
+      this.attributes[key] = value;
+    },
+    dispatchEvent(event) {
+      this.events = [...(this.events || []), event.type];
+    },
+    focus() {},
+    click() {
+      this.handlers.click?.({});
+    },
+  });
+  const select = element();
+  select.options = [
+    { value: "", textContent: "Unspecified body" },
+    { value: "sony-venice", textContent: "Sony Venice" },
+  ];
+  const preset = element({ presetFor: "angle-preset", presetValue: "back" });
+  const previous = element({ stepFor: "camera-body", stepDir: "-1" });
+  const next = element({ stepFor: "camera-body", stepDir: "1" });
+  const stepper = element({ stepper: "camera-body" });
+  const angle = element();
+  angle.value = "custom";
+  const output = element();
+  const doc = {
+    getElementById: (id) =>
+      ({
+        "camera-body": select,
+        "camera-body-display": output,
+        "angle-preset": angle,
+      })[id],
+    querySelectorAll: (query) =>
+      query === "[data-preset-for]"
+        ? [preset]
+        : query === "[data-step-for]"
+          ? [previous, next]
+          : query === "[data-stepper]"
+            ? [stepper]
+            : [],
+  };
+  const presentation = installPresetPresentation(doc);
+  preset.click();
+  assert.equal(angle.value, "back");
+  assert.deepEqual(angle.events, ["change"]);
+  assert.equal(preset.attributes["aria-pressed"], "true");
+  next.click();
+  assert.equal(select.value, "sony-venice");
+  assert.equal(output.textContent, "Sony Venice");
+  next.click();
+  assert.equal(select.value, "");
+  assert.equal(output.textContent, "Unspecified body");
+  previous.click();
+  assert.equal(select.value, "sony-venice");
+  select.value = "";
+  angle.value = "custom";
+  presentation.refresh();
+  assert.equal(output.textContent, "Unspecified body");
+  assert.equal(preset.attributes["aria-pressed"], "false");
+});
+
+test("a precise text light-color input accepts only complete hex colors and never normalizes user values silently", () => {
+  assert.equal(parseHexColor("#FFD66B"), "#FFD66B");
+  assert.equal(parseHexColor("#2e8fff"), "#2e8fff");
+  for (const value of ["#ff", "red", "#000000<script>", " #ffffff", ""])
+    assert.throws(() => parseHexColor(value), /#RRGGBB/);
+});
+
+test("reset clears a previously chosen color from both pickers, while an active partial hex input is preserved", () => {
+  const native = { value: "#ff00ff" },
+    hex = { value: "#ff00ff" },
+    label = { textContent: "#ff00ff" };
+  const doc = {
+    activeElement: null,
+    getElementById: (id) =>
+      ({
+        "lighting-color": native,
+        "lighting-color-hex": hex,
+        "lighting-color-label": label,
+      })[id],
+  };
+  syncLightColorInputs(doc, "");
+  assert.equal(native.value, "#2e8fff");
+  assert.equal(hex.value, "#2e8fff");
+  assert.equal(label.textContent, "Unspecified");
+  hex.value = "#ff";
+  doc.activeElement = hex;
+  syncLightColorInputs(doc, "#FFD66B");
+  assert.equal(hex.value, "#ff");
+  assert.equal(native.value, "#FFD66B");
+  assert.equal(label.textContent, "#FFD66B");
+});
 test("creative UI starts neutral, while disabling preserves settings without mutating state", () => {
   const first = initialTools();
   assert.equal(first.angle.enabled, false);
