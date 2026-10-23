@@ -302,3 +302,62 @@ test("public image-edit command rejects mask arguments before prompting or submi
   assert.equal(f.prompts.length, 0);
   assert.ok(f.notices.some((message) => /mask.*not available/i.test(message)));
 });
+
+test("an open Studio observes classic-command SecretStorage changes and releases its subscription", async () => {
+  const f = fixture();
+  let changed;
+  let close;
+  let released = false;
+  const messages = [];
+  f.context.extensionPath = path.join(os.tmpdir(), "apixly-extension-fixture");
+  f.context.globalStorageUri = {
+    fsPath: path.join(os.tmpdir(), "apixly-storage-fixture"),
+  };
+  f.context.secrets.onDidChange = (callback) => {
+    changed = callback;
+    return {
+      dispose() {
+        released = true;
+      },
+    };
+  };
+  f.vscode.ViewColumn = { One: 1 };
+  f.vscode.Uri = { file: (fsPath) => ({ fsPath }) };
+  const webview = {
+    cspSource: "vscode-resource:",
+    asWebviewUri: (uri) => ({ toString: () => uri.fsPath }),
+    onDidReceiveMessage: () => ({
+      dispose() {
+        /* Test subscription. */
+      },
+    }),
+    postMessage: async (message) => messages.push(message),
+  };
+  f.vscode.window.createWebviewPanel = () => ({
+    webview,
+    reveal() {
+      /* Test window. */
+    },
+    onDidDispose: (callback) => {
+      close = callback;
+      return {
+        dispose() {
+          /* Test registration. */
+        },
+      };
+    },
+    dispose() {
+      /* Test panel. */
+    },
+  });
+  registerStudio(f.context, f.vscode, {})();
+  assert.equal(typeof changed, "function");
+  await changed({ key: "apixlyMedia.apiKey" });
+  assert.ok(
+    messages.some(
+      (message) => message.type === "state" && message.hasKey === false,
+    ),
+  );
+  close();
+  assert.equal(released, true);
+});

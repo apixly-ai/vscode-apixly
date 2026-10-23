@@ -48,6 +48,8 @@ Reference video uses public HTTPS image URLs in the JSON `images` array. The ext
 
 Reference support is checked against the live capability API before submission; unsupported or unverified combinations are rejected locally, with no generation POST. The default `grok-imagine-video` currently accepts text prompts only. The current `grok-imagine-video-1.5-preview` route requires public URLs and rejects inline/data-URL images before POST. For other models, explicitly supplied advanced parameters remain subject to their advertised capabilities and actual API contract. Your model is never replaced after submission and references are never silently dropped.
 
+For `grok-imagine-video-1.5-preview` reference video, framing follows the reference image. The panel hides resolution/aspect controls; supplying `resolution` or `aspect_ratio` explicitly is rejected before POST rather than silently discarded. The finished preview shows decoded dimensions and duration. Text-to-video retains its separately qualified resolution and aspect controls.
+
 Video parameters can also include explicit `images`, `videos`, and `audios` string arrays when the model's live capabilities permit them. Local video/audio uploads are not offered. Whether reference media, first/last frames, image sizes, or audio are supported depends on the exact model and gateway contract.
 
 Local selection is limited to eight reference images, 20 MiB each and 80 MiB combined. Model limits may be lower. Result downloads are limited to 32 MiB for an image and 256 MiB for a video, and supported image/video content types only. Large or expired results can be retrieved using your existing task in Apixly.

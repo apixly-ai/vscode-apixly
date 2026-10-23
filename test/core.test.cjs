@@ -443,3 +443,32 @@ test("the current Grok preview URL-only contract rejects inline image data befor
     /public.*URL|HTTPS reference/i,
   );
 });
+
+test("reference-mode geometry is explicitly rejected while unqualified fields are never removed silently", async () => {
+  const { validateVideoReferences } = require("../src/core.cjs");
+  const client = {
+    videoCapabilities: async () => [
+      {
+        model: "grok-imagine-video-1.5-preview",
+        modes: ["image2video"],
+        max_input_images: 1,
+      },
+    ],
+  };
+  const params = {
+    images: ["https://example.com/image.png"],
+    seconds: 3,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+  };
+  await assert.rejects(
+    validateVideoReferences(client, "grok-imagine-video-1.5-preview", params),
+    /Framing follows|geometry.*not.*qualified/i,
+  );
+  assert.equal(params.resolution, "720p");
+  assert.equal(params.aspect_ratio, "16:9");
+  await validateVideoReferences(client, "grok-imagine-video-1.5-preview", {
+    images: params.images,
+    seconds: 3,
+  });
+});

@@ -541,6 +541,19 @@ async function validateVideoReferences(client, model, params) {
   const imageCount = params.images?.length || 0;
   const videoCount = params.videos?.length || 0;
   const audioCount = params.audios?.length || 0;
+  if (model === "grok-imagine-video-1.5-preview") {
+    if (!imageCount)
+      throw fail(
+        "Choose a public HTTPS image URL or a generated image before using this image-to-video model. No generation was submitted.",
+      );
+    if (
+      Object.hasOwn(params, "resolution") ||
+      Object.hasOwn(params, "aspect_ratio")
+    )
+      throw fail(
+        "Framing follows the reference image; geometry controls are not qualified for this model. Remove resolution and aspect_ratio from advanced parameters. No generation was submitted.",
+      );
+  }
   if (!imageCount && !videoCount && !audioCount) return;
   let capabilities;
   try {

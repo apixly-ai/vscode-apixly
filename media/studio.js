@@ -24,6 +24,11 @@
     $("message").className = "message hidden";
     $("message").textContent = "";
   }
+  function referenceGeometry() {
+    return (
+      mode === "video" && $("model").value === "grok-imagine-video-1.5-preview"
+    );
+  }
   function setBusy(value) {
     busy = value;
     $("generate").disabled = value || !hasKey;
@@ -36,6 +41,8 @@
       "#creation-form input,#creation-form select,#creation-form textarea",
     ))
       control.disabled = value;
+    $("aspect-ratio").disabled = value || referenceGeometry();
+    $("resolution").disabled = value || referenceGeometry();
     $("generate-label").textContent = value
       ? "Working on your asset…"
       : mode === "video"
@@ -45,6 +52,11 @@
           : "Generate image";
   }
   function modelOptions() {
+    $("aspect-ratio-row").classList.toggle("hidden", referenceGeometry());
+    $("video-resolution-row").classList.toggle(
+      "hidden",
+      mode !== "video" || referenceGeometry(),
+    );
     const models =
       mode === "video"
         ? [...new Set([defaults.video, ...videos.map((item) => item.model)])]
@@ -88,8 +100,9 @@
           ? previous
           : "";
       }
-      $("model-hint").textContent =
-        `${capability.seconds?.min ?? "?"}–${capability.seconds?.max ?? "?"} seconds · ${(capability.resolutions || []).join(" / ")} · ${(capability.modes || []).join(", ")}${capability.modes?.some((item) => ["image2video", "frames2video"].includes(item)) ? " · Reference images supported." : " · Text prompts only. For image input, explicitly choose grok-imagine-video-1.5-preview or another supported model."}`;
+      $("model-hint").textContent = referenceGeometry()
+        ? `${capability.seconds?.min ?? 1}–${capability.seconds?.max ?? 15} seconds. Framing follows the reference image; final dimensions appear in preview.`
+        : `${capability.seconds?.min ?? "?"}–${capability.seconds?.max ?? "?"} seconds · ${(capability.resolutions || []).join(" / ")} · ${(capability.modes || []).join(", ")}${capability.modes?.some((item) => ["image2video", "frames2video"].includes(item)) ? " · Reference images supported." : " · Text prompts only. For image input, explicitly choose grok-imagine-video-1.5-preview or another supported model."}`;
     } else
       $("model-hint").textContent =
         mode === "edit"
@@ -230,11 +243,12 @@
       if (!advanced || typeof advanced !== "object" || Array.isArray(advanced))
         throw new Error("Advanced parameters must be a JSON object.");
       const params = {};
-      if ($("aspect-ratio").value)
+      if (!referenceGeometry() && $("aspect-ratio").value)
         params.aspect_ratio = $("aspect-ratio").value;
       if (mode === "video") {
         if ($("duration").value) params.seconds = Number($("duration").value);
-        if ($("resolution").value) params.resolution = $("resolution").value;
+        if (!referenceGeometry() && $("resolution").value)
+          params.resolution = $("resolution").value;
       }
       const merged = { ...params, ...advanced };
       clearMessage();
@@ -289,7 +303,8 @@
       $("model").value = message.model;
       rememberedModels.video = message.model;
       $("duration").value = "3";
-      $("aspect-ratio").value = "16:9";
+      $("aspect-ratio").value = "";
+      $("resolution").value = "";
       modelOptions();
       showMessage(
         "Generated image link attached. Review the explicit video model and parameters, then select Generate video. No video has been submitted.",
@@ -344,6 +359,13 @@
         const meta = document.createElement("span");
         meta.className = "result-meta";
         meta.textContent = `${asset.extension.slice(1).toUpperCase()} · ${(asset.bytes / 1024 / 1024).toFixed(2)} MiB`;
+        if (asset.kind === "video") {
+          const actualMetadata = () => {
+            meta.textContent = `${media.videoWidth} × ${media.videoHeight} · ${Number.isFinite(media.duration) ? media.duration.toFixed(2) : "?"}s · ${(asset.bytes / 1024 / 1024).toFixed(2)} MiB`;
+          };
+          media.addEventListener("loadedmetadata", actualMetadata);
+          if (media.readyState >= 1) actualMetadata();
+        }
         const button = document.createElement("button");
         button.type = "button";
         button.className = "button primary compact";

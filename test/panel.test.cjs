@@ -326,7 +326,7 @@ test("video references require confirmed model support before a paid POST and ar
     kind: "video",
     model: "grok-imagine-video-1.5-preview",
     prompt: "Animate this image",
-    params: '{"seconds":3,"resolution":"720p"}',
+    params: '{"seconds":3}',
   });
   assert.equal(f.calls.length, 1);
   assert.deepEqual(f.calls[0].params.images, [

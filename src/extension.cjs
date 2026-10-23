@@ -520,9 +520,13 @@ function registerStudio(context, vscode, actions) {
       actions,
     });
     activeStudio = studio;
+    const secretChanges = context.secrets.onDidChange?.((event) =>
+      event.key === KEY ? studio.handle({ type: "ready" }) : undefined,
+    );
     context.subscriptions.push(
       panel.webview.onDidReceiveMessage((message) => studio.handle(message)),
       panel.onDidDispose(() => {
+        secretChanges?.dispose();
         activePanel = undefined;
         activeStudio = undefined;
         studio.dispose().catch(() => undefined);
