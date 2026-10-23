@@ -451,6 +451,7 @@
       creativeUI?.setReference(references[0]?.previewUri);
       setBusy(busy);
     } else if (message.type === "authorization") {
+      clearMessage();
       connecting = true;
       $("settings").open = true;
       $("authorization-code").textContent = message.userCode;
