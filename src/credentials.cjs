@@ -1,4 +1,5 @@
 "use strict";
+const crypto = require("node:crypto");
 const { createAccountClient } = require("./account.cjs");
 const { createClient } = require("./core.cjs");
 const { catalogIdentity } = require("./catalog-cache.cjs");
@@ -26,6 +27,9 @@ function createCredentialSession({
   let mutating = false;
   let attempt;
   let epoch = 0;
+  let connectionDigest;
+  const digest = (token) =>
+    token ? crypto.createHash("sha256").update(token).digest("hex") : null;
   const listeners = new Set();
   const mode = () =>
     context.globalState.get(AUTH_MODE) === "account" ? "account" : "manual";
@@ -35,6 +39,29 @@ function createCredentialSession({
         .then(listener)
         .catch(() => undefined);
   };
+  async function readConnection() {
+    for (;;) {
+      const generation = epoch;
+      const credential = await context.secrets.get(CONNECTION_KEY);
+      if (generation !== epoch) continue;
+      const currentDigest = digest(credential);
+      if (currentDigest !== connectionDigest) {
+        connectionDigest = currentDigest;
+        epoch++;
+        metadata = undefined;
+        keys = [];
+        accountError = undefined;
+        loading = undefined;
+        attempt?.abort();
+      }
+      return { credential, generation: epoch };
+    }
+  }
+  async function readCredential(current) {
+    if (current === "account") return readConnection();
+    const generation = epoch;
+    return { credential: await context.secrets.get(MANUAL_KEY), generation };
+  }
   async function mutation(work) {
     if (active || mutating)
       throw problem(
@@ -52,7 +79,7 @@ function createCredentialSession({
     if (loading) return loading;
     if (metadata && !force) return metadata;
     const current = epoch;
-    loading = (async () => {
+    const request = (async () => {
       let next;
       try {
         next = await accountClient.account(token);
@@ -101,14 +128,18 @@ function createCredentialSession({
         throw accountError;
       })
       .finally(() => {
-        loading = undefined;
+        if (loading === request) loading = undefined;
       });
-    return loading;
+    loading = request;
+    return request;
   }
   const session = {
     subscribe(listener) {
       listeners.add(listener);
       return { dispose: () => listeners.delete(listener) };
+    },
+    async credentialsChanged(key) {
+      if (key === CONNECTION_KEY) await readConnection();
     },
     hold() {
       if (mutating)
@@ -127,10 +158,8 @@ function createCredentialSession({
     },
     async view({ refresh = false } = {}) {
       const current = mode();
-      const currentEpoch = epoch;
-      const credential = await context.secrets.get(
-        current === "account" ? CONNECTION_KEY : MANUAL_KEY,
-      );
+      const { credential, generation: currentEpoch } =
+        await readCredential(current);
       if (current === "account" && credential && refresh)
         await loadAccount(credential, true).catch(() => undefined);
       if (currentEpoch !== epoch || current !== mode())
@@ -155,10 +184,8 @@ function createCredentialSession({
     },
     async resolve({ refreshAccount = false } = {}) {
       const current = mode();
-      const currentEpoch = epoch;
-      const credential = await context.secrets.get(
-        current === "account" ? CONNECTION_KEY : MANUAL_KEY,
-      );
+      const { credential, generation: currentEpoch } =
+        await readCredential(current);
       if (currentEpoch !== epoch || current !== mode())
         throw problem("The active credentials changed. Try again.");
       if (!credential)
@@ -191,6 +218,7 @@ function createCredentialSession({
     },
     async connect({ openExternal, onPending = () => undefined } = {}) {
       return mutation(async () => {
+        const initial = await readConnection();
         const controller = new AbortController();
         attempt = controller;
         let flow;
@@ -213,7 +241,17 @@ function createCredentialSession({
             await accountClient.disconnect(grant.token).catch(() => undefined);
             throw problem("Account connection cancelled.");
           }
-          const previous = await context.secrets.get(CONNECTION_KEY);
+          const observed = await readConnection();
+          if (
+            controller.signal.aborted ||
+            observed.generation !== initial.generation
+          ) {
+            await accountClient.disconnect(grant.token).catch(() => undefined);
+            throw problem(
+              "Account connection cancelled because the active credentials changed.",
+            );
+          }
+          const previous = observed.credential;
           if (previous && previous !== grant.token) {
             try {
               await accountClient.disconnect(previous);
@@ -228,7 +266,15 @@ function createCredentialSession({
               }
             }
           }
+          if (controller.signal.aborted || epoch !== observed.generation) {
+            await accountClient.disconnect(grant.token).catch(() => undefined);
+            throw problem(
+              "Account connection cancelled because the active credentials changed.",
+            );
+          }
           epoch++;
+          const installedGeneration = epoch;
+          connectionDigest = digest(grant.token);
           metadata = grant.metadata;
           accountError = undefined;
           keys = [];
@@ -236,6 +282,10 @@ function createCredentialSession({
           await context.globalState.update(AUTH_MODE, "account");
           // The returned grant is already authoritative; fetch only safe Key metadata.
           const listed = await accountClient.keys(grant.token);
+          if (epoch !== installedGeneration)
+            throw problem(
+              "The active account changed. Refresh your account again.",
+            );
           if (listed.selection_revision === metadata.selection_revision)
             keys = listed.data;
           return await session.view();
@@ -250,7 +300,7 @@ function createCredentialSession({
     },
     async refresh() {
       if (mode() === "account") {
-        const token = await context.secrets.get(CONNECTION_KEY);
+        const { credential: token } = await readConnection();
         if (!token) throw problem("Connect your Apixly account to continue.");
         await loadAccount(token, true);
       }
@@ -263,13 +313,20 @@ function createCredentialSession({
           throw problem(
             "Connect your Apixly account before choosing an account Key.",
           );
-        const token = await context.secrets.get(CONNECTION_KEY);
+        const { credential: token, generation } = await readConnection();
         if (!token) throw problem("Connect your Apixly account to continue.");
         const next = await accountClient.selectKey(token, id);
+        if (epoch !== generation)
+          throw problem("The active account changed. Choose a Key again.");
         epoch++;
+        const selectedGeneration = epoch;
         metadata = next;
         accountError = undefined;
         const listed = await accountClient.keys(token);
+        if (epoch !== selectedGeneration)
+          throw problem(
+            "The active account changed. Refresh your account again.",
+          );
         keys =
           listed.selection_revision === next.selection_revision
             ? listed.data
@@ -279,7 +336,7 @@ function createCredentialSession({
     },
     async disconnect() {
       return mutation(async () => {
-        const token = await context.secrets.get(CONNECTION_KEY);
+        const { credential: token, generation } = await readConnection();
         if (token) {
           try {
             await accountClient.disconnect(token);
@@ -287,7 +344,12 @@ function createCredentialSession({
             if (error.code !== "unauthorized") throw error;
           }
         }
+        if (epoch !== generation)
+          throw problem(
+            "The active account changed. The newer connection was not removed.",
+          );
         epoch++;
+        connectionDigest = null;
         metadata = undefined;
         accountError = undefined;
         keys = [];

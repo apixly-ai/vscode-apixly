@@ -13,7 +13,10 @@ const {
 } = require("./core.cjs");
 const KEY = "apixlyMedia.apiKey";
 const HISTORY = "apixlyMedia.tasks";
-const { createCredentialSession } = require("./credentials.cjs");
+const {
+  createCredentialSession,
+  CONNECTION_KEY,
+} = require("./credentials.cjs");
 const IMAGE_TYPES = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -547,9 +550,15 @@ function registerStudio(context, vscode, actions) {
       credentialSession: actions.credentials,
     });
     activeStudio = studio;
-    const secretChanges = context.secrets.onDidChange?.((event) =>
-      event.key === KEY ? studio.handle({ type: "ready" }) : undefined,
-    );
+    const secretChanges = context.secrets.onDidChange?.(async (event) => {
+      if (![KEY, CONNECTION_KEY].includes(event.key)) return;
+      try {
+        await actions.credentials?.credentialsChanged?.(event.key);
+      } catch {
+        /* The normal Studio state read reports unavailable storage safely. */
+      }
+      return studio.handle({ type: "ready" });
+    });
     const connectionChanges = actions.credentials?.subscribe(() =>
       studio.handle({ type: "ready" }),
     );

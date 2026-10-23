@@ -334,12 +334,13 @@ test("public image-edit command rejects mask arguments before prompting or submi
   assert.ok(f.notices.some((message) => /mask.*not available/i.test(message)));
 });
 
-test("an open Studio observes classic-command SecretStorage changes and releases its subscription", async () => {
+test("an open Studio observes manual and account SecretStorage changes and releases its subscription", async () => {
   const f = fixture();
   let changed;
   let close;
   let released = false;
   const messages = [];
+  const observed = [];
   f.context.extensionPath = path.join(os.tmpdir(), "apixly-extension-fixture");
   f.context.globalStorageUri = {
     fsPath: path.join(os.tmpdir(), "apixly-storage-fixture"),
@@ -381,9 +382,30 @@ test("an open Studio observes classic-command SecretStorage changes and releases
       /* Test panel. */
     },
   });
-  registerStudio(f.context, f.vscode, {})();
+  registerStudio(f.context, f.vscode, {
+    credentials: {
+      credentialsChanged: async (key) => observed.push(key),
+      subscribe: () => ({ dispose() {} }),
+      view: async () => ({
+        mode: "manual",
+        hasCredential: f.values.has("apixlyMedia.apiKey"),
+      }),
+      resolve: async () => ({
+        identity: require("../src/catalog-cache.cjs").catalogIdentity({
+          mode: "manual",
+          key: f.values.get("apixlyMedia.apiKey"),
+        }),
+        client: {},
+      }),
+    },
+  })();
   assert.equal(typeof changed, "function");
   await changed({ key: "apixlyMedia.apiKey" });
+  await changed({ key: "apixlyMedia.connectionToken" });
+  assert.deepEqual(observed, [
+    "apixlyMedia.apiKey",
+    "apixlyMedia.connectionToken",
+  ]);
   assert.ok(
     messages.some(
       (message) => message.type === "state" && message.hasKey === false,

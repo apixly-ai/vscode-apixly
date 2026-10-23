@@ -322,3 +322,101 @@ test("upstream selected-Key rejection preserves the account connection and permi
   await f.session.selectKey("7");
   assert.equal((await f.session.view()).hasCredential, true);
 });
+
+test("shared SecretStorage token replacement invalidates account metadata and cache identity without exposing the token", async () => {
+  const f = setup({ [CONNECTION_KEY]: "apc_account_a" });
+  f.state.set(AUTH_MODE, "account");
+  const m = (id) => ({
+    ...metadata,
+    connection_id: `connection-${id}`,
+    account: { id, name: id, email: `${id}@example.test` },
+  });
+  f.accountClient.account = async (token) =>
+    m(token === "apc_account_a" ? "A" : "B");
+  const first = await f.session.resolve();
+  f.secrets.set(CONNECTION_KEY, "apc_account_b");
+  const next = await f.session.resolve();
+  assert.notEqual(first.identity, next.identity);
+  assert.equal((await f.session.view()).account.account.id, "B");
+  assert(!JSON.stringify(await f.session.view()).includes("apc_account_b"));
+  f.secrets.delete(CONNECTION_KEY);
+  await f.session.credentialsChanged(CONNECTION_KEY);
+  const cleared = await f.session.view();
+  assert.equal(cleared.hasConnection, false);
+  assert.equal(cleared.account, null);
+});
+
+test("a late old-token metadata response cannot overwrite a newly observed connection", async () => {
+  const f = setup({ [CONNECTION_KEY]: "apc_account_a" });
+  f.state.set(AUTH_MODE, "account");
+  let release;
+  f.accountClient.account = async (token) =>
+    token === "apc_account_a"
+      ? await new Promise((resolve) => {
+          release = resolve;
+        })
+      : { ...metadata, connection_id: "connection-B", account: { id: "B" } };
+  const old = f.session.resolve();
+  const caught = old.catch((e) => e);
+  for (let i = 0; i < 20 && !release; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+  assert(release);
+  f.secrets.set(CONNECTION_KEY, "apc_account_b");
+  await f.session.credentialsChanged(CONNECTION_KEY);
+  const current = await f.session.resolve();
+  release(metadata);
+  assert((await caught).safe);
+  assert.equal((await f.session.view()).account.account.id, "B");
+  assert.equal((await f.session.resolve()).identity, current.identity);
+});
+
+test("the connection's own SecretStorage event is idempotent and does not cancel its successful authorization", async () => {
+  const f = setup();
+  let signal;
+  f.accountClient.poll = async (_flow, options) => {
+    signal = options.signal;
+    return { token: "apc_private_connection", metadata };
+  };
+  const original = f.context.secrets.store;
+  f.context.secrets.store = async (key, value) => {
+    await original(key, value);
+    if (key === CONNECTION_KEY) await f.session.credentialsChanged(key);
+  };
+  f.accountClient.keys = async () => {
+    assert.equal(signal.aborted, false);
+    return { data: [], selected_key_id: "studixly", selection_revision: 1 };
+  };
+  const view = await f.session.connect({ openExternal: async () => true });
+  assert.equal(view.hasConnection, true);
+  assert.equal(view.account.account.id, "42");
+  assert(!f.calls.some((call) => call[0] === "disconnect"));
+});
+
+test("a delayed old stored-token read cannot roll the identity back after a newer read", async () => {
+  const f = setup({ [CONNECTION_KEY]: "apc_account_a" });
+  f.state.set(AUTH_MODE, "account");
+  let release,
+    delayed = true;
+  const original = f.context.secrets.get;
+  f.context.secrets.get = async (key) => {
+    if (key === CONNECTION_KEY && delayed) {
+      delayed = false;
+      return await new Promise((resolve) => {
+        release = resolve;
+      });
+    }
+    return original(key);
+  };
+  f.accountClient.account = async (token) => ({
+    ...metadata,
+    connection_id: token === "apc_account_a" ? "A" : "B",
+    account: { id: token === "apc_account_a" ? "A" : "B" },
+  });
+  const old = f.session.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+  f.secrets.set(CONNECTION_KEY, "apc_account_b");
+  const current = await f.session.resolve();
+  release("apc_account_a");
+  assert.equal((await old).identity, current.identity);
+  assert.equal((await f.session.view()).account.account.id, "B");
+});
