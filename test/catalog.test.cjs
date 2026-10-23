@@ -141,6 +141,37 @@ test("expired cache returns saved options immediately and refreshes in the backg
   assert.equal(updates[0].models[0].id, "new");
   assert.equal(cache.peek(id).stale, false);
 });
+
+test("a fresh cache reader joining a forced refresh receives completion instead of staying refreshing", async () => {
+  const cache = createCatalogResolver();
+  const id = manual("key");
+  await cache.read(id, async () => snapshot("old"));
+  let release;
+  const forced = cache.read(
+    id,
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+    { force: true },
+  );
+  await Promise.resolve();
+  const updates = [];
+  const focused = await cache.read(
+    id,
+    async () => {
+      throw Error("must join");
+    },
+    { onUpdate: (value) => updates.push(value) },
+  );
+  assert.equal(focused.refreshing, true);
+  release(snapshot("new"));
+  await forced;
+  await Promise.resolve();
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].refreshing, false);
+  assert.equal(updates[0].models[0].id, "new");
+});
 test("refresh failure retains same-identity last-known data and redacts transport errors", async () => {
   const cache = createCatalogResolver();
   const id = manual("private-secret");

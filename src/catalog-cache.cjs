@@ -98,8 +98,8 @@ function createCatalogResolver({ ttlMs = 600000, now = Date.now } = {}) {
       const entry = entryFor(identity);
       if (entry.snapshot && !force) {
         const stale = status(entry).stale;
-        if (stale) {
-          const pending = refresh(entry, load);
+        if (stale || entry.inflight) {
+          const pending = entry.inflight || refresh(entry, load);
           if (onUpdate) pending.then(onUpdate).catch(() => undefined);
         }
         return status(entry);
