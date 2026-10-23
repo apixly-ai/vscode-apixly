@@ -4,5 +4,14 @@
     "includes": ["**", "!node_modules", "!package-lock.json", "!media/source"]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2 },
+  "overrides": [
+    {
+      "includes": [
+        "test/fixtures/creative-contract-v1.json",
+        "test/fixtures/creative-golden-v1.json"
+      ],
+      "formatter": { "enabled": false }
+    }
+  ],
   "linter": { "rules": { "preset": "none" } }
 }

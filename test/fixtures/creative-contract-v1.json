@@ -1,0 +1,295 @@
+{
+  "version": "1.0.0",
+  "source": {
+    "repository": "apixly-ai/studixly",
+    "commit": "b3f80bc5ce935435cf9f28ee079bd77da1868587",
+    "files_sha256": {
+      "lib/canvas/tools/angle.ts": "3febbfdfff4a88bdda65842c4798c9a188dee4adc57597a8e6cd5509ea2b3e8d",
+      "lib/canvas/tools/lighting.ts": "b61fd046941367ea739257f39ec57a5b89333547eccf7a0f3ee5b8c36b1f31b4",
+      "lib/canvas/tools/camera.ts": "ca3328ddef3549ae368da277a1766a0c71530fa4d28918b82692e032c2e497e3"
+    }
+  },
+  "api": {
+    "javascript": "composeCreativePrompt(payload) -> result; CommonJS + globalThis.ApixlyCreativeControlsV1",
+    "python": "compose_creative_prompt(payload) -> result",
+    "payload": {
+      "prompt": "string, <=20000 UTF-16 code units; retained byte-for-byte when no fragment",
+      "mode": "generate|edit, default generate",
+      "tools": "optional plain object: angle, lighting, camera only"
+    },
+    "result": {
+      "final_prompt": "string",
+      "sections": "ordered array of {tool,label,text}; text is exact rendered line",
+      "applied_tools": "ordered array of nonempty tool names",
+      "changed": "final_prompt !== original prompt"
+    }
+  },
+  "defaults": {
+    "angle": {
+      "enabled": false,
+      "preset": "custom",
+      "yaw": 0,
+      "pitch": 0,
+      "shot": "none"
+    },
+    "lighting": {
+      "enabled": false,
+      "preset": "",
+      "brightness": 50,
+      "color": "",
+      "rimLight": false,
+      "smartText": ""
+    },
+    "camera": {
+      "enabled": false,
+      "body": "",
+      "lens": "",
+      "focal": null,
+      "aperture": ""
+    }
+  },
+  "fields": {
+    "angle": {
+      "enabled": "boolean",
+      "preset": [
+        "custom",
+        "fisheye",
+        "dutch",
+        "front_high",
+        "front_low",
+        "aerial_top_down",
+        "back"
+      ],
+      "yaw": "finite number, -360000..360000, wrap modulo360",
+      "pitch": "finite number -90..90; POSITIVE=above/high-angle",
+      "shot": [
+        "none",
+        "extreme_long",
+        "long",
+        "medium",
+        "medium_close_up",
+        "close_up"
+      ],
+      "showPrompt": "optional boolean UI-only; ignored"
+    },
+    "lighting": {
+      "enabled": "boolean",
+      "preset": [
+        "",
+        "overexposedFilm",
+        "blueBacklight",
+        "rembrandt",
+        "cyberpunk",
+        "psychedelicSunset",
+        "mysteriousDark",
+        "goldenHour",
+        "nolanGray"
+      ],
+      "view": [
+        "perspective",
+        "front"
+      ],
+      "brightness": "finite number 0..100",
+      "color": "empty or #RGB/#RRGGBB; active #000/#000000 rejects (use brightness to darken)",
+      "keyLight": [
+        "",
+        "left",
+        "top",
+        "right",
+        "front",
+        "bottom",
+        "back"
+      ],
+      "lightYaw": "optional finite number -360000..360000; do not fill default0 if omitted",
+      "lightPitch": "optional finite number -90..90; POSITIVE=above",
+      "rimLight": "boolean",
+      "smartText": "string <=1000 UTF-16 code units; trim only this free-text field"
+    },
+    "camera": {
+      "enabled": "boolean",
+      "body": [
+        "",
+        "arri-alexa-35",
+        "sony-venice",
+        "red-v-raptor",
+        "panavision-dxl2",
+        "imax-film",
+        "leica-m11"
+      ],
+      "lens": [
+        "",
+        "cooke-anamorphic-sf",
+        "panavision-c-series",
+        "zeiss-master-prime",
+        "canon-k35",
+        "helios-44-2",
+        "lensbaby"
+      ],
+      "focal": "null or integer8..800 (mm)",
+      "aperture": [
+        "",
+        "f/1.4",
+        "f/1.8",
+        "f/2.8",
+        "f/4",
+        "f/5.6",
+        "f/8",
+        "f/11",
+        "f/16"
+      ]
+    }
+  },
+  "rules": [
+    "Three groups explicitly default OFF, including omitted enabled. Validate known fields/types/enums/ranges without coercion. Unknown payload/group/field keys fail clearly; no echo of invalid values. enabled is boolean only. Missing group/empty group is allowed. Other optional numeric fields cannot be null; only focal allows null.",
+    "Use source builder vocabulary and numeric:true angle semantics. Use JS Math.round semantics (floor(x+0.5)), never Python bankers rounding. Whole-number formatting must have no .0. Directional angle presets ignore yaw/pitch; fisheye/dutch add slider fragments.",
+    "Light continuous coordinates take precedence over legacy keyLight if EITHER numeric coordinate is present. Both omitted => use legacy keyLight. Zero/zero continuous is neutral, NOT frontal-light injection. Color empty means unspecified, never inject default white.",
+    "Ordering is angle(Camera), lighting(Lighting), camera(Lens). Generate lines use LABEL: fragment. Edit lines use exact source imperative wrappers, followed by the explicit preservation guard below only if at least one section exists.",
+    "Preserve the original prompt exactly, including whitespace. If sections exist join original prompt (if nonempty), blank line, then section lines. If original prompt is empty return section lines only. No newlines or guard when sections are empty.",
+    "Returned sections contain rendered labeled/imperative lines, without the preservation guard. applied_tools uses only nonempty fragments, not merely enabled groups.",
+    "Final prompt length<=20000, finite numbers only (booleans are not numbers). Invalid mode/settings/overlong final prompt must stop before inference. Native UI may constrain/snaps/preview angles, but compiler rejects out-of-range pitch rather than silently clamping.",
+    "AI direction only. These controls do not set real camera matrices, EXIF, physical light simulation, or vendor API fields. Only composed prompt is passed to existing inference routes; model, references and explicit API options are not overwritten. Compiler makes zero network/file/credential calls.",
+    "Composing/previewing/applying/resetting controls never submits generation or creates a paid task. Preview compiler and host compiler must agree. Host recomputes from typed controls and rejects client-forged final prompt."
+  ],
+  "edit_guard": "Preserve all subject and scene details that are not explicitly requested to change.",
+  "catalog": {
+    "angle": {
+      "directionalPresets": {
+        "front_high": "front view, high-angle shot, looking down at the subject",
+        "front_low": "front view, low-angle shot, looking up from below",
+        "aerial_top_down": "aerial view, bird's-eye view, top-down shot",
+        "back": "back view, seen from behind"
+      },
+      "lensPresets": {
+        "fisheye": "fisheye lens, distorted spherical wide-angle perspective",
+        "dutch": "Dutch angle, tilted canted camera"
+      },
+      "yawSectors": [
+        "",
+        "three-quarter front view, from the right",
+        "right side profile view",
+        "three-quarter back view, from the right",
+        "back view, seen from behind",
+        "three-quarter back view, from the left",
+        "left side profile view",
+        "three-quarter front view, from the left"
+      ],
+      "shots": {
+        "none": "",
+        "extreme_long": "extreme long shot",
+        "long": "long shot, full body in frame",
+        "medium": "medium shot, from the waist up",
+        "medium_close_up": "medium close-up",
+        "close_up": "close-up shot"
+      }
+    },
+    "lighting": {
+      "presets": {
+        "overexposedFilm": "overexposed film look, blown-out highlights, dreamy soft glow",
+        "blueBacklight": "blue backlighting, cool blue rim light, glowing silhouette edges",
+        "rembrandt": "Rembrandt lighting, key light at 45 degrees, triangle of light on the shadow-side cheek, chiaroscuro",
+        "cyberpunk": "cyberpunk lighting, neon pink and cyan light sources, high-contrast neon rim lighting",
+        "psychedelicSunset": "psychedelic sunset lighting, saturated magenta and orange glow, low sun backlight",
+        "mysteriousDark": "low-key lighting, deep dramatic shadows, mysterious moody atmosphere",
+        "goldenHour": "golden hour lighting, warm soft low-angle sunlight, long shadows",
+        "nolanGray": "cool desaturated color grade, muted teal and slate gray tones, soft overcast cinematic light"
+      },
+      "keyLights": {
+        "left": "key light from camera left, dramatic side lighting",
+        "right": "key light from camera right, dramatic side lighting",
+        "top": "overhead top lighting",
+        "front": "frontal lighting, evenly lit",
+        "bottom": "underlighting, lit from below",
+        "back": "backlighting, subject lit from behind"
+      },
+      "lightAzNames": [
+        "front",
+        "front-right",
+        "camera right",
+        "back-right",
+        "behind",
+        "back-left",
+        "camera left",
+        "front-left"
+      ],
+      "hueSectors": [
+        [
+          15,
+          "red"
+        ],
+        [
+          40,
+          "orange"
+        ],
+        [
+          52,
+          "amber"
+        ],
+        [
+          70,
+          "yellow"
+        ],
+        [
+          150,
+          "green"
+        ],
+        [
+          175,
+          "teal"
+        ],
+        [
+          200,
+          "cyan"
+        ],
+        [
+          260,
+          "blue"
+        ],
+        [
+          300,
+          "purple"
+        ],
+        [
+          330,
+          "magenta"
+        ],
+        [
+          345,
+          "pink"
+        ],
+        [
+          360,
+          "red"
+        ]
+      ]
+    },
+    "camera": {
+      "bodies": {
+        "arri-alexa-35": "ARRI Alexa 35",
+        "sony-venice": "Sony Venice",
+        "red-v-raptor": "RED V-Raptor",
+        "panavision-dxl2": "Panavision Millennium DXL2",
+        "imax-film": "IMAX 70mm film camera",
+        "leica-m11": "Leica M11"
+      },
+      "lenses": {
+        "cooke-anamorphic-sf": "Cooke Anamorphic/i SF 1.8x lens",
+        "panavision-c-series": "Panavision C-Series anamorphic lens",
+        "zeiss-master-prime": "Zeiss Master Prime lens",
+        "canon-k35": "vintage Canon K-35 lens",
+        "helios-44-2": "vintage Helios 44-2 lens",
+        "lensbaby": "Lensbaby lens"
+      },
+      "apertures": [
+        "",
+        "f/1.4",
+        "f/1.8",
+        "f/2.8",
+        "f/4",
+        "f/5.6",
+        "f/8",
+        "f/11",
+        "f/16"
+      ]
+    }
+  }
+}

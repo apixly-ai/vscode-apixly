@@ -1,0 +1,4782 @@
+{
+  "contract_version": "1.0.0",
+  "source": {
+    "repository": "apixly-ai/studixly",
+    "commit": "b3f80bc5ce935435cf9f28ee079bd77da1868587",
+    "files_sha256": {
+      "lib/canvas/tools/angle.ts": "3febbfdfff4a88bdda65842c4798c9a188dee4adc57597a8e6cd5509ea2b3e8d",
+      "lib/canvas/tools/lighting.ts": "b61fd046941367ea739257f39ec57a5b89333547eccf7a0f3ee5b8c36b1f31b4",
+      "lib/canvas/tools/camera.ts": "ca3328ddef3549ae368da277a1766a0c71530fa4d28918b82692e032c2e497e3"
+    }
+  },
+  "valid": [
+    {
+      "id": "unicode-no-tools-byte-exact",
+      "input": {
+        "prompt": "  红色跑车 🚗\n  ",
+        "mode": "generate",
+        "tools": {}
+      },
+      "expected": {
+        "final_prompt": "  红色跑车 🚗\n  ",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "unicode-tools-byte-exact",
+      "input": {
+        "prompt": "红色跑车 🚗",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "smartText": "窗边柔光 🌞"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "红色跑车 🚗\n\nLighting: lighting style: 窗边柔光 🌞",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: lighting style: 窗边柔光 🌞"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "no-tools-byte-exact",
+      "input": {
+        "prompt": "  Original\n prompt  ",
+        "mode": "generate",
+        "tools": {}
+      },
+      "expected": {
+        "final_prompt": "  Original\n prompt  ",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "all-off-byte-exact",
+      "input": {
+        "prompt": "\n Keep spacing \n",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": false,
+            "preset": "back",
+            "yaw": 90
+          },
+          "lighting": {
+            "enabled": false,
+            "preset": "goldenHour"
+          },
+          "camera": {
+            "enabled": false,
+            "body": "arri-alexa-35",
+            "focal": 85
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "\n Keep spacing \n",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "enabled-omitted-is-off",
+      "input": {
+        "prompt": "base",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "yaw": 90
+          },
+          "lighting": {
+            "preset": "goldenHour"
+          },
+          "camera": {
+            "focal": 85
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "base",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "all-enabled-neutral",
+      "input": {
+        "prompt": " base ",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true
+          },
+          "lighting": {
+            "enabled": true
+          },
+          "camera": {
+            "enabled": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": " base ",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "empty-base",
+      "input": {
+        "prompt": "",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "goldenHour"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "Lighting: golden hour lighting, warm soft low-angle sunlight, long shadows",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: golden hour lighting, warm soft low-angle sunlight, long shadows"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-custom",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "custom",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-fisheye",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "fisheye",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from fisheye lens, distorted spherical wide-angle perspective, three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from fisheye lens, distorted spherical wide-angle perspective, three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-dutch",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "dutch",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from Dutch angle, tilted canted camera, three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from Dutch angle, tilted canted camera, three-quarter front view, from the right, worm's-eye view, extreme low angle, (57° azimuth, -65° elevation), long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-front_high",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "front_high",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from front view, high-angle shot, looking down at the subject, long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from front view, high-angle shot, looking down at the subject, long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-front_low",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "front_low",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from front view, low-angle shot, looking up from below, long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from front view, low-angle shot, looking up from below, long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-aerial_top_down",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "aerial_top_down",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from aerial view, bird's-eye view, top-down shot, long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from aerial view, bird's-eye view, top-down shot, long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-preset-back",
+      "input": {
+        "prompt": "A red toy car",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "back",
+            "yaw": 57,
+            "pitch": -65,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "A red toy car\n\nChange the camera angle: re-photograph the exact same subject from back view, seen from behind, long shot, full body in frame.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from back view, seen from behind, long shot, full body in frame."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw--225",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": -225,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: three-quarter back view, from the right, (135° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: three-quarter back view, from the right, (135° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw--90",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": -90,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: left side profile view, (270° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: left side profile view, (270° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw--0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": -0.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-yaw-0",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 0,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-yaw-0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 0.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: (1° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: (1° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-22.49",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 22.49,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: (22° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: (22° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-22.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 22.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: three-quarter front view, from the right, (23° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: three-quarter front view, from the right, (23° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-22.51",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 22.51,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: three-quarter front view, from the right, (23° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: three-quarter front view, from the right, (23° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-45",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 45,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: three-quarter front view, from the right, (45° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: three-quarter front view, from the right, (45° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-67.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 67.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: right side profile view, (68° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: right side profile view, (68° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-90",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 90,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: right side profile view, (90° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: right side profile view, (90° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-157.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 157.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: back view, seen from behind, (158° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: back view, seen from behind, (158° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-180",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 180,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: back view, seen from behind, (180° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: back view, seen from behind, (180° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-270",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 270,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: left side profile view, (270° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: left side profile view, (270° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-337.49",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 337.49,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: three-quarter front view, from the left, (337° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: three-quarter front view, from the left, (337° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-337.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 337.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: (338° azimuth)",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: (338° azimuth)"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-yaw-359.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 359.5,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-yaw-360",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 360,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-yaw-720",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 720,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-pitch--90",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -90
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from worm's-eye view, extreme low angle, (-90° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from worm's-eye view, extreme low angle, (-90° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch--60",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -60
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from worm's-eye view, extreme low angle, (-60° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from worm's-eye view, extreme low angle, (-60° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch--59.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -59.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from low-angle shot, looking up from below, (-59° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from low-angle shot, looking up from below, (-59° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch--15.01",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -15.01
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from low-angle shot, looking up from below, (-15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from low-angle shot, looking up from below, (-15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch--15",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -15
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from (-15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from (-15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch--0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": -0.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-pitch-0",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-pitch-0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 0.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from (1° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from (1° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-15",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 15
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from (15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from (15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-15.01",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 15.01
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-45",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 45
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (45° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (45° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-55",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 55
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (55° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (55° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-59.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 59.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (60° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from high-angle shot, looking down at the subject, (60° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-60",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 60
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from bird's-eye view, top-down shot, directly overhead, (60° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from bird's-eye view, top-down shot, directly overhead, (60° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-pitch-90",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 90
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera angle: re-photograph the exact same subject from bird's-eye view, top-down shot, directly overhead, (90° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from bird's-eye view, top-down shot, directly overhead, (90° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-shot-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "none"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "angle-shot-extreme_long",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "extreme_long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: extreme long shot",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: extreme long shot"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-shot-long",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "long"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: long shot, full body in frame",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: long shot, full body in frame"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-shot-medium",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "medium"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: medium shot, from the waist up",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: medium shot, from the waist up"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-shot-medium_close_up",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "medium_close_up"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: medium close-up",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: medium close-up"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "angle-shot-close_up",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "shot": "close_up"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nCamera: close-up shot",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: close-up shot"
+          }
+        ],
+        "applied_tools": [
+          "angle"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": ""
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "lighting-preset-overexposedFilm",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "overexposedFilm"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with overexposed film look, blown-out highlights, dreamy soft glow.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with overexposed film look, blown-out highlights, dreamy soft glow."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-blueBacklight",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "blueBacklight"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with blue backlighting, cool blue rim light, glowing silhouette edges.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with blue backlighting, cool blue rim light, glowing silhouette edges."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-rembrandt",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "rembrandt"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with Rembrandt lighting, key light at 45 degrees, triangle of light on the shadow-side cheek, chiaroscuro.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with Rembrandt lighting, key light at 45 degrees, triangle of light on the shadow-side cheek, chiaroscuro."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-cyberpunk",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "cyberpunk"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with cyberpunk lighting, neon pink and cyan light sources, high-contrast neon rim lighting.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with cyberpunk lighting, neon pink and cyan light sources, high-contrast neon rim lighting."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-psychedelicSunset",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "psychedelicSunset"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with psychedelic sunset lighting, saturated magenta and orange glow, low sun backlight.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with psychedelic sunset lighting, saturated magenta and orange glow, low sun backlight."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-mysteriousDark",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "mysteriousDark"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with low-key lighting, deep dramatic shadows, mysterious moody atmosphere.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with low-key lighting, deep dramatic shadows, mysterious moody atmosphere."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-goldenHour",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "goldenHour"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with golden hour lighting, warm soft low-angle sunlight, long shadows.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with golden hour lighting, warm soft low-angle sunlight, long shadows."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "lighting-preset-nolanGray",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "nolanGray"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with cool desaturated color grade, muted teal and slate gray tones, soft overcast cinematic light.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with cool desaturated color grade, muted teal and slate gray tones, soft overcast cinematic light."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--90",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -90
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -90° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -90° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--51",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -51
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -51° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -51° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--45",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -45
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -45° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left far below (305° azimuth, -45° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--15",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -15
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left below (305° azimuth, -15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left below (305° azimuth, -15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--14.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -14.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left (305° azimuth, -14° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left (305° azimuth, -14° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch--0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": -0.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left (305° azimuth, 0° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left (305° azimuth, 0° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-0",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left (305° azimuth, 0° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left (305° azimuth, 0° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 0.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left (305° azimuth, 1° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left (305° azimuth, 1° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-14.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 14.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left above (305° azimuth, 15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left above (305° azimuth, 15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-15",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 15
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left above (305° azimuth, 15° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left above (305° azimuth, 15° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-45",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 45
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 45° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 45° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-60",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 60
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 60° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 60° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-pitch-90",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 305,
+            "lightPitch": 90
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 90° elevation).\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with key light from the front-left high above (305° azimuth, 90° elevation)."
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw--90",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": -90,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the camera left (270° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the camera left (270° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw--0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": -0.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-yaw-0",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 0,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-yaw-0.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 0.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the front (1° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the front (1° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-22.49",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 22.49,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the front (22° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the front (22° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-22.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 22.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the front-right (23° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the front-right (23° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-22.51",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 22.51,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the front-right (23° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the front-right (23° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-67.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 67.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the camera right (68° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the camera right (68° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-90",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 90,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the camera right (90° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the camera right (90° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-180",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 180,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the behind (180° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the behind (180° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-270",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 270,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the camera left (270° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the camera left (270° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-337.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 337.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the front (338° azimuth, 0° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the front (338° azimuth, 0° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-yaw-359.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 359.5,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-yaw-360",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 360,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-yaw-720",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightYaw": 720,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-brightness-0",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: very dim lighting, deep shadows",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: very dim lighting, deep shadows"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-14",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 14
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: very dim lighting, deep shadows",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: very dim lighting, deep shadows"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-14.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 14.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: dim, subdued lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: dim, subdued lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-15",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 15
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: dim, subdued lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: dim, subdued lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-39",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 39
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: dim, subdued lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: dim, subdued lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-39.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 39.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-brightness-40",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 40
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-brightness-50",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 50
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-brightness-60",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 60
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-brightness-60.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 60.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: bright, well-lit",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: bright, well-lit"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-61",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 61
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: bright, well-lit",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: bright, well-lit"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-85",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 85
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: bright, well-lit",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: bright, well-lit"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-85.5",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 85.5
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: very bright, high-key lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: very bright, high-key lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-86",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 86
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: very bright, high-key lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: very bright, high-key lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-brightness-100",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 100
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: very bright, high-key lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: very bright, high-key lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#fff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#fff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#ffffff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#ffffff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#ff0000",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#ff0000",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: red key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: red key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#ffaa00",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#ffaa00",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: amber key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: amber key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#f5d600",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#f5d600",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: yellow key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: yellow key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#00ff00",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#00ff00",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: green key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: green key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#00aaff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#00aaff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#2e8fff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#2e8fff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#635bff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#635bff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: blue key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#ff00ff",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#ff00ff",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: magenta key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: magenta key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-color-#888888",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#888888",
+            "keyLight": "left",
+            "rimLight": true
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: white key light from camera left, dramatic side lighting, rim lighting outlining the subject's edges"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": ""
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-legacy-left",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "left"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from camera left, dramatic side lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from camera left, dramatic side lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-top",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "top"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: overhead top lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: overhead top lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-right",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "right"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from camera right, dramatic side lighting",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from camera right, dramatic side lighting"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-front",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "front"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: frontal lighting, evenly lit",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: frontal lighting, evenly lit"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-bottom",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "bottom"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: underlighting, lit from below",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: underlighting, lit from below"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-legacy-back",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "back"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: backlighting, subject lit from behind",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: backlighting, subject lit from behind"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-continuous-neutral-overrides-legacy",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "left",
+            "lightYaw": 0,
+            "lightPitch": 0
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "light-coordinate-partial",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "keyLight": "left",
+            "lightPitch": 60
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLighting: key light from the high above (0° azimuth, 60° elevation)",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: key light from the high above (0° azimuth, 60° elevation)"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "light-smart-trim-only",
+      "input": {
+        "prompt": "  Base untouched  ",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "smartText": "  Soft window light  "
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "  Base untouched  \n\nLighting: lighting style: Soft window light",
+        "sections": [
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: lighting style: Soft window light"
+          }
+        ],
+        "applied_tools": [
+          "lighting"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": ""
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "camera-body-arri-alexa-35",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "arri-alexa-35"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on ARRI Alexa 35",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on ARRI Alexa 35"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-sony-venice",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "sony-venice"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on Sony Venice",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on Sony Venice"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-red-v-raptor",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "red-v-raptor"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on RED V-Raptor",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on RED V-Raptor"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-panavision-dxl2",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "panavision-dxl2"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on Panavision Millennium DXL2",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on Panavision Millennium DXL2"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-imax-film",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "imax-film"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on IMAX 70mm film camera",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on IMAX 70mm film camera"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-body-leica-m11",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "leica-m11"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot on Leica M11",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on Leica M11"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": ""
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "camera-lens-cooke-anamorphic-sf",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "cooke-anamorphic-sf"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with Cooke Anamorphic/i SF 1.8x lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with Cooke Anamorphic/i SF 1.8x lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-panavision-c-series",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "panavision-c-series"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with Panavision C-Series anamorphic lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with Panavision C-Series anamorphic lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-zeiss-master-prime",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "zeiss-master-prime"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with Zeiss Master Prime lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with Zeiss Master Prime lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-canon-k35",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "canon-k35"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with vintage Canon K-35 lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with vintage Canon K-35 lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-helios-44-2",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "helios-44-2"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with vintage Helios 44-2 lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with vintage Helios 44-2 lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-lens-lensbaby",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "lens": "lensbaby"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: shot with Lensbaby lens",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot with Lensbaby lens"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-null",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": null
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "camera-focal-8",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 8
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: ultra wide-angle 8mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: ultra wide-angle 8mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-16",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 16
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: ultra wide-angle 16mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: ultra wide-angle 16mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-20",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 20
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: ultra wide-angle 20mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: ultra wide-angle 20mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-21",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 21
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: wide-angle 21mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: wide-angle 21mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-24",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 24
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: wide-angle 24mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: wide-angle 24mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-32",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 32
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: wide-angle 32mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: wide-angle 32mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-33",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 33
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 33mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 33mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-35",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 35
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 35mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 35mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-50",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 50
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 50mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 50mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-84",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 84
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 84mm",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 84mm"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-85",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 85
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 85mm telephoto",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 85mm telephoto"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-135",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 135
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 135mm telephoto",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 135mm telephoto"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-focal-800",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 800
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nLens: 800mm telephoto",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: 800mm telephoto"
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-none",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": ""
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "camera-aperture-f/1.4",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/1.4"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/1.4, shallow depth of field.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/1.4, shallow depth of field."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/1.8",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/1.8"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/1.8, shallow depth of field.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/1.8, shallow depth of field."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/2.8",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/2.8"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/2.8.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/2.8."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/4",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/4"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/4.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/4."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/5.6",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/5.6"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/5.6.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/5.6."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/8",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/8"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/8, deep focus.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/8, deep focus."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/11",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/11"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/11, deep focus.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/11, deep focus."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "camera-aperture-f/16",
+      "input": {
+        "prompt": "subject",
+        "mode": "edit",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "aperture": "f/16"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject\n\nChange the camera and lens style: make it look f/16, deep focus.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look f/16, deep focus."
+          }
+        ],
+        "applied_tools": [
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "combined-generate",
+      "input": {
+        "prompt": "Keep the red toy car and its blue roof.",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 90,
+            "pitch": 55,
+            "shot": "close_up"
+          },
+          "lighting": {
+            "enabled": true,
+            "preset": "goldenHour",
+            "lightYaw": 270,
+            "lightPitch": 45,
+            "brightness": 65,
+            "color": "#ffcc33",
+            "rimLight": true,
+            "smartText": "soft studio shadows"
+          },
+          "camera": {
+            "enabled": true,
+            "body": "arri-alexa-35",
+            "lens": "cooke-anamorphic-sf",
+            "focal": 85,
+            "aperture": "f/1.4"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "Keep the red toy car and its blue roof.\n\nCamera: right side profile view, high-angle shot, looking down at the subject, (90° azimuth, 55° elevation), close-up shot\nLighting: golden hour lighting, warm soft low-angle sunlight, long shadows, amber key light from the camera left high above (270° azimuth, 45° elevation), bright, well-lit, rim lighting outlining the subject's edges, lighting style: soft studio shadows\nLens: shot on ARRI Alexa 35 with Cooke Anamorphic/i SF 1.8x lens, 85mm telephoto, f/1.4, shallow depth of field",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Camera: right side profile view, high-angle shot, looking down at the subject, (90° azimuth, 55° elevation), close-up shot"
+          },
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Lighting: golden hour lighting, warm soft low-angle sunlight, long shadows, amber key light from the camera left high above (270° azimuth, 45° elevation), bright, well-lit, rim lighting outlining the subject's edges, lighting style: soft studio shadows"
+          },
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Lens: shot on ARRI Alexa 35 with Cooke Anamorphic/i SF 1.8x lens, 85mm telephoto, f/1.4, shallow depth of field"
+          }
+        ],
+        "applied_tools": [
+          "angle",
+          "lighting",
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "combined-edit",
+      "input": {
+        "prompt": "Keep the red toy car and its blue roof.",
+        "mode": "edit",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "yaw": 90,
+            "pitch": 55,
+            "shot": "close_up"
+          },
+          "lighting": {
+            "enabled": true,
+            "preset": "goldenHour",
+            "lightYaw": 270,
+            "lightPitch": 45,
+            "brightness": 65,
+            "color": "#ffcc33",
+            "rimLight": true,
+            "smartText": "soft studio shadows"
+          },
+          "camera": {
+            "enabled": true,
+            "body": "arri-alexa-35",
+            "lens": "cooke-anamorphic-sf",
+            "focal": 85,
+            "aperture": "f/1.4"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "Keep the red toy car and its blue roof.\n\nChange the camera angle: re-photograph the exact same subject from right side profile view, high-angle shot, looking down at the subject, (90° azimuth, 55° elevation), close-up shot.\nChange the lighting: relight the same scene with golden hour lighting, warm soft low-angle sunlight, long shadows, amber key light from the camera left high above (270° azimuth, 45° elevation), bright, well-lit, rim lighting outlining the subject's edges, lighting style: soft studio shadows.\nChange the camera and lens style: make it look shot on ARRI Alexa 35 with Cooke Anamorphic/i SF 1.8x lens, 85mm telephoto, f/1.4, shallow depth of field.\nPreserve all subject and scene details that are not explicitly requested to change.",
+        "sections": [
+          {
+            "tool": "angle",
+            "label": "Camera",
+            "text": "Change the camera angle: re-photograph the exact same subject from right side profile view, high-angle shot, looking down at the subject, (90° azimuth, 55° elevation), close-up shot."
+          },
+          {
+            "tool": "lighting",
+            "label": "Lighting",
+            "text": "Change the lighting: relight the same scene with golden hour lighting, warm soft low-angle sunlight, long shadows, amber key light from the camera left high above (270° azimuth, 45° elevation), bright, well-lit, rim lighting outlining the subject's edges, lighting style: soft studio shadows."
+          },
+          {
+            "tool": "camera",
+            "label": "Lens",
+            "text": "Change the camera and lens style: make it look shot on ARRI Alexa 35 with Cooke Anamorphic/i SF 1.8x lens, 85mm telephoto, f/1.4, shallow depth of field."
+          }
+        ],
+        "applied_tools": [
+          "angle",
+          "lighting",
+          "camera"
+        ],
+        "changed": true
+      }
+    },
+    {
+      "id": "ui-only-fields-do-not-change-output",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "showPrompt": true
+          },
+          "lighting": {
+            "enabled": true,
+            "view": "front"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    },
+    {
+      "id": "disabled-black-is-neutral",
+      "input": {
+        "prompt": "subject",
+        "mode": "generate",
+        "tools": {
+          "lighting": {
+            "enabled": false,
+            "color": "#000000"
+          }
+        }
+      },
+      "expected": {
+        "final_prompt": "subject",
+        "sections": [],
+        "applied_tools": [],
+        "changed": false
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "unknown-payload",
+      "input": {
+        "prompt": "base",
+        "extra": "secret-value"
+      },
+      "error_path": "extra"
+    },
+    {
+      "id": "prompt-nonstring",
+      "input": {
+        "prompt": 123
+      },
+      "error_path": "prompt"
+    },
+    {
+      "id": "tools-array",
+      "input": {
+        "prompt": "base",
+        "tools": []
+      },
+      "error_path": "tools"
+    },
+    {
+      "id": "group-null",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "angle": null
+        }
+      },
+      "error_path": "tools.angle"
+    },
+    {
+      "id": "utf16-prompt-limit",
+      "input": {
+        "prompt": "🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗"
+      },
+      "error_path": "prompt"
+    },
+    {
+      "id": "utf16-smart-limit",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "smartText": "🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞🌞"
+          }
+        }
+      },
+      "error_path": "tools.lighting.smartText"
+    },
+    {
+      "id": "unknown-group",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "emotion": {
+            "enabled": true
+          }
+        }
+      },
+      "error_path": "tools.emotion"
+    },
+    {
+      "id": "unknown-field",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "unknown": 1
+          }
+        }
+      },
+      "error_path": "tools.angle.unknown"
+    },
+    {
+      "id": "enabled-string",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "camera": {
+            "enabled": "true"
+          }
+        }
+      },
+      "error_path": "tools.camera.enabled"
+    },
+    {
+      "id": "unknown-preset",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "preset": "mystery"
+          }
+        }
+      },
+      "error_path": "tools.angle.preset"
+    },
+    {
+      "id": "bad-light-preset",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "preset": "unknown"
+          }
+        }
+      },
+      "error_path": "tools.lighting.preset"
+    },
+    {
+      "id": "pitch-over",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": 91
+          }
+        }
+      },
+      "error_path": "tools.angle.pitch"
+    },
+    {
+      "id": "pitch-under",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "lightPitch": -91
+          }
+        }
+      },
+      "error_path": "tools.lighting.lightPitch"
+    },
+    {
+      "id": "brightness-over",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "brightness": 101
+          }
+        }
+      },
+      "error_path": "tools.lighting.brightness"
+    },
+    {
+      "id": "bad-color",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#ggg"
+          }
+        }
+      },
+      "error_path": "tools.lighting.color"
+    },
+    {
+      "id": "active-black",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "color": "#000000"
+          }
+        }
+      },
+      "error_path": "tools.lighting.color"
+    },
+    {
+      "id": "bad-body",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "body": "unsupported"
+          }
+        }
+      },
+      "error_path": "tools.camera.body"
+    },
+    {
+      "id": "focal-bool",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": true
+          }
+        }
+      },
+      "error_path": "tools.camera.focal"
+    },
+    {
+      "id": "focal-fraction",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 24.5
+          }
+        }
+      },
+      "error_path": "tools.camera.focal"
+    },
+    {
+      "id": "focal-over",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 801
+          }
+        }
+      },
+      "error_path": "tools.camera.focal"
+    },
+    {
+      "id": "wrong-mode",
+      "input": {
+        "prompt": "base",
+        "mode": "precise3d"
+      },
+      "error_path": "mode"
+    },
+    {
+      "id": "null-pitch",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "angle": {
+            "enabled": true,
+            "pitch": null
+          }
+        }
+      },
+      "error_path": "tools.angle.pitch"
+    },
+    {
+      "id": "bad-smart-length",
+      "input": {
+        "prompt": "base",
+        "tools": {
+          "lighting": {
+            "enabled": true,
+            "smartText": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        }
+      },
+      "error_path": "tools.lighting.smartText"
+    },
+    {
+      "id": "too-long-final",
+      "input": {
+        "prompt": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "tools": {
+          "camera": {
+            "enabled": true,
+            "focal": 85
+          }
+        }
+      },
+      "error_path": "final_prompt"
+    }
+  ]
+}
