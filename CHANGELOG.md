@@ -2,6 +2,11 @@
 
 ## 0.2.0
 
+- Connect an existing Apixly account through browser approval and PKCE. Keep only a revocable connection token in SecretStorage; choose the default Studixly Key or another active owned Key.
+- Load complete typed model catalogs, including Seedream, with ten-minute stale-while-revalidate caching, explicit refresh and authoritative account Key revisions.
+- Isolate late metadata/catalog responses across Key changes and shared SecretStorage updates. Keep temporary failures recoverable without a silent credential or model fallback.
+- Reuse Apixly's existing viewpoint presets, eight lighting swatches, orbit markers and camera/lens steppers, with readable narrow-panel layouts and typed hex colors.
+
 - Add optional Viewpoint, Lighting and Lens controls with local direction diagrams, presets and synchronized numeric inputs.
 - Show the exact final prompt and provide keyless Copy final prompt with authoritative host recomputation.
 - Keep every tool off by default; disabling restores the original prompt exactly and reference edits preserve details not requested to change.

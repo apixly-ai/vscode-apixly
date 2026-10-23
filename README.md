@@ -42,6 +42,10 @@ Account connection, Key selection and model browsing do not generate media. The 
 
 ## Direct the look before you generate
 
+![Actual native VS Code camera and lens controls with focal length and aperture steppers](https://raw.githubusercontent.com/apixly-ai/vscode-apixly/apixly/media/creative-preview.png)
+
+An unedited native capture of the creative controls. These settings build the visible prompt locally, including before an account or API key is connected.
+
 Open **Creative direction** beneath your prompt to use Apixly's existing creative tools:
 
 - **Viewpoint:** drag the direction diagram, use the arrow buttons or enter azimuth/elevation. Choose an angle preset and framing. Positive elevation places the viewpoint above the subject.
