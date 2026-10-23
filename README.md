@@ -65,6 +65,10 @@ These are **AI prompt instructions**, not a physical light simulation, calibrate
 
 ## Model parameters and reference files
 
+**Available models** loads the complete typed catalog for your selected key when you open the picker. Image models are selected by the catalog's `image` type, including Seedream and future model IDs, rather than guessed from their names. Video options respect both the key's catalog and advertised video capabilities. A listed video model without capability details remains selectable and is marked accordingly; use its documented advanced parameters.
+
+The catalog uses a ten-minute cache with background refresh after expiry, concurrent requests are combined, and **Refresh models** fetches an update immediately. A failed refresh keeps same-key saved options and shows a stale/error notice. Switching keys cannot display a late response from the previous key. Your exact model selection is never silently replaced, and you can still enter an exact ID manually. Model metadata stays in host memory; raw keys are not cache keys or Webview data.
+
 The panel provides aspect ratio and video duration/resolution fields. Video limits are read from the current capability API when available. Optional advanced JSON values take precedence over those fields. The original Command Palette workflows also accept a parameter object directly. Consult your model's current Apixly API documentation for supported values. Examples of parameter shapes:
 
 ```json

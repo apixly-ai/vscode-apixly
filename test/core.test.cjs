@@ -355,16 +355,30 @@ test("panel metadata uses authenticated read-only catalog routes", async () => {
   const client = createClient("key", async (url, init) => {
     calls.push({ url, init });
     return json({
-      data: url.endsWith("/models")
-        ? [{ id: "exact-model" }]
+      data: url.endsWith("/models/list")
+        ? [
+            {
+              id: "seedream-5-0",
+              type: "image",
+              name: "Seedream",
+              pricing: { cost_per_image: 0.02 },
+            },
+          ]
         : [{ model: "exact-video", seconds: { min: 1, max: 15 } }],
     });
   });
-  assert.deepEqual(await client.models(), ["exact-model"]);
+  assert.deepEqual(await client.models(), [
+    {
+      id: "seedream-5-0",
+      type: "image",
+      name: "Seedream",
+      pricing: { cost_per_image: 0.02 },
+    },
+  ]);
   assert.equal((await client.videoCapabilities())[0].model, "exact-video");
   assert.deepEqual(
     calls.map((item) => item.url),
-    ["https://apixly.ai/v1/models", "https://apixly.ai/v1/video/config"],
+    ["https://apixly.ai/v1/models/list", "https://apixly.ai/v1/video/config"],
   );
   assert.ok(
     calls.every(
@@ -379,7 +393,7 @@ test("support user agent is sent only to Apixly API routes, never result storage
   const calls = [];
   const client = createClient("key", async (url, init) => {
     calls.push({ url, init });
-    return url.endsWith("/models")
+    return url.endsWith("/models/list")
       ? json({ data: [] })
       : new Response(Buffer.from([1]), {
           headers: { "content-type": "video/mp4" },

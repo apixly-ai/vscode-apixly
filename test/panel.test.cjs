@@ -65,7 +65,7 @@ test("rendered panel uses restrictive CSP and contains helpful verified Apixly r
   assert.match(html, /usage/i);
 });
 
-async function setup(t) {
+async function setup(t, options = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "apixly-panel-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const messages = [];
@@ -115,7 +115,10 @@ async function setup(t) {
   };
   const calls = [];
   const client = {
-    models: async () => ["grok-imagine-image", "gemini-3.1-flash-image"],
+    models: async () => [
+      { id: "grok-imagine-image", type: "image" },
+      { id: "gemini-3.1-flash-image", type: "image" },
+    ],
     videoCapabilities: async () => [],
     submitImage: async (request) => {
       calls.push(request);
@@ -135,10 +138,13 @@ async function setup(t) {
     vscode,
     webview,
     cacheRoot: path.join(root, "previews"),
-    clientFactory: (key) => {
-      assert.equal(key, secret);
-      return client;
-    },
+    clientFactory:
+      options.clientFactory ||
+      ((key) => {
+        assert.equal(key, secret);
+        return client;
+      }),
+    catalogResolver: options.catalogResolver,
     actions: {
       setApiKey: async () => undefined,
       clearApiKey: async () => undefined,
@@ -322,20 +328,22 @@ test("panel refuses duplicate submissions while a request is unresolved", async 
   await f.studio.dispose();
 });
 
-test("saving a key refreshes authenticated model metadata without exposing a credential", async (t) => {
+test("saving a key prepares lazy catalog loading without exposing a credential", async (t) => {
   const f = await setup(t);
   let reads = 0;
   f.client.models = async () => {
     reads++;
-    return ["available-image"];
+    return [{ id: "available-image", type: "image" }];
   };
   await f.studio.handle({ type: "setKey" });
+  assert.equal(reads, 0);
+  await f.studio.handle({ type: "requestCatalog" });
   assert.equal(reads, 1);
   assert.ok(
     f.messages.some(
       (message) =>
         message.type === "catalog" &&
-        message.models.includes("available-image"),
+        message.models.some((model) => model.id === "available-image"),
     ),
   );
   assert.ok(!JSON.stringify(f.messages).includes("actual-secret"));
@@ -615,4 +623,155 @@ test("Copy final prompt recomputes typed settings without a key, HTTP or task pe
   assert(f.messages.some((m) => m.type === "promptCopied"));
   await f.studio.handle({ ...payload, final_prompt: "forged" });
   assert.equal(copied.length, 1);
+});
+
+test("catalog is lazy, de-duplicates concurrent picker loads, and preserves complete typed image IDs", async (t) => {
+  const f = await setup(t);
+  let calls = 0;
+  f.client.models = async () => {
+    calls++;
+    return [
+      {
+        id: "seedream-5-0",
+        type: "image",
+        name: "Seedream",
+        future: { keep: true },
+      },
+      { id: "future-x", type: "image" },
+    ];
+  };
+  await f.studio.handle({ type: "ready" });
+  assert.equal(calls, 0);
+  await Promise.all([
+    f.studio.handle({ type: "requestCatalog" }),
+    f.studio.handle({ type: "requestCatalog" }),
+  ]);
+  assert.equal(calls, 1);
+  const catalog = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(catalog.available, true);
+  assert.equal(catalog.models[0].id, "seedream-5-0");
+  assert.equal(catalog.models[0].future.keep, true);
+  await f.studio.handle({ type: "requestCatalog" });
+  assert.equal(calls, 1);
+  await f.studio.handle({ type: "refreshCatalog" });
+  assert.equal(calls, 2);
+});
+
+test("a late catalog response from an old key cannot overwrite a newer selected identity", async (t) => {
+  let current = "old-key",
+    releaseOld,
+    oldStarted = false;
+  const factory = (key) => ({
+    models: async () =>
+      key === "old-key"
+        ? ((oldStarted = true),
+          await new Promise((resolve) => (releaseOld = resolve)))
+        : [{ id: "new-only", type: "image" }],
+    videoCapabilities: async () => [],
+  });
+  const f = await setup(t, { clientFactory: factory });
+  f.context.secrets.get = async () => current;
+  const old = f.studio.handle({ type: "requestCatalog" });
+  for (let i = 0; i < 20 && !oldStarted; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+  assert(oldStarted);
+  current = "new-key";
+  await f.studio.handle({ type: "ready" });
+  await f.studio.handle({ type: "requestCatalog" });
+  releaseOld([{ id: "old-only", type: "image" }]);
+  await old;
+  const last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.models[0].id, "new-only");
+  assert(!JSON.stringify(f.messages).includes("old-key"));
+  assert(!JSON.stringify(f.messages).includes("new-key"));
+});
+
+test("model interface offers a complete picker, exact manual ID, refresh and catalog state", () => {
+  const html = renderHtml({
+    cspSource: "vscode-resource:",
+    scriptUri: "studio.js",
+    styleUri: "studio.css",
+    logoUri: "icon.png",
+    catalogUri: "model-catalog.js",
+    nonce: "n",
+  });
+  assert.match(html, /id="model-picker"/);
+  assert.match(html, /id="refresh-catalog"/);
+  assert.match(html, /id="catalog-status"/);
+  assert.match(html, /src="model-catalog.js"/);
+});
+
+test("a delayed old credential read cannot invalidate or fetch after a newer key is active", async (t) => {
+  let read = 0,
+    releaseOld;
+  const loads = [];
+  const f = await setup(t, {
+    clientFactory: (key) => ({
+      models: async () => {
+        loads.push(key);
+        return [
+          { id: key === "new-key" ? "new-only" : "old-only", type: "image" },
+        ];
+      },
+      videoCapabilities: async () => [],
+    }),
+  });
+  f.context.secrets.get = async () =>
+    read++ === 0
+      ? await new Promise((resolve) => (releaseOld = resolve))
+      : "new-key";
+  const old = f.studio.handle({ type: "requestCatalog" });
+  await new Promise((resolve) => setImmediate(resolve));
+  await f.studio.handle({ type: "requestCatalog" });
+  releaseOld("old-key");
+  await old;
+  assert.deepEqual(loads, ["new-key"]);
+});
+
+test("video configuration failure keeps authoritative images and same-identity last-known capabilities", async (t) => {
+  const f = await setup(t);
+  const models = [
+    { id: "seedream-5-0", type: "image" },
+    { id: "video-owned", type: "video" },
+  ];
+  f.client.models = async () => models;
+  f.client.videoCapabilities = async () => {
+    throw Error("private upstream failure");
+  };
+  await f.studio.handle({ type: "requestCatalog" });
+  let catalog = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(catalog.available, true);
+  assert.deepEqual(catalog.models, models);
+  assert.deepEqual(catalog.videos, []);
+  assert.match(catalog.capabilitiesError, /Video parameters are unavailable/);
+  assert(!JSON.stringify(catalog).includes("private upstream"));
+  const cap = {
+    model: "video-owned",
+    modes: ["text2video"],
+    seconds: { min: 1, max: 10 },
+  };
+  f.client.videoCapabilities = async () => [
+    cap,
+    { model: "removed-video", modes: [] },
+  ];
+  await f.studio.handle({ type: "refreshCatalog" });
+  f.client.videoCapabilities = async () => {
+    throw Error("private");
+  };
+  await f.studio.handle({ type: "refreshCatalog" });
+  catalog = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.deepEqual(catalog.videos, [cap]);
+  assert.equal(catalog.stale, true);
+  assert.match(catalog.capabilitiesError, /saved video parameters/);
+  f.client.models = async () => {
+    throw Error("permission list unavailable");
+  };
+  f.client.videoCapabilities = async () => [
+    { model: "not-authorized", modes: ["text2video"] },
+  ];
+  await f.studio.handle({ type: "refreshCatalog" });
+  catalog = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.deepEqual(catalog.models, models);
+  assert.deepEqual(catalog.videos, [cap]);
+  assert(catalog.error);
 });

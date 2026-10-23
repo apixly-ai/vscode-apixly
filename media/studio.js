@@ -14,6 +14,9 @@
   let videoReferences = [];
   let catalog = [];
   let videos = [];
+  let catalogAvailable = false;
+  let catalogState = {};
+  let selectedVideoCapability;
   let history = [];
   let creativeUI;
   const send = (type, extra = {}) => host.postMessage({ type, ...extra });
@@ -44,6 +47,7 @@
       control.disabled = value;
     $("aspect-ratio").disabled = value || referenceGeometry();
     $("resolution").disabled = value || referenceGeometry();
+    $("refresh-catalog").disabled = value || !hasKey;
     creativeUI?.setBusy(value);
     $("generate").disabled =
       value || !hasKey || (creativeUI && !creativeUI.canSubmit());
@@ -55,24 +59,46 @@
           ? "Edit image"
           : "Generate image";
   }
+  function renderCatalogStatus(count) {
+    $("catalog-status").textContent = catalogState.error
+      ? `${catalogAvailable ? "Showing saved models. " : ""}${catalogState.error}`
+      : catalogState.capabilitiesError
+        ? catalogState.capabilitiesError
+        : catalogState.refreshing
+          ? `${catalogAvailable ? "Showing saved models. " : ""}Updating model catalog…`
+          : catalogAvailable
+            ? `${count} ${mode === "video" ? "video" : "image"} models · ${catalogState.stale ? "Saved catalog; refresh when needed" : "Catalog up to date"}${catalogState.updatedAt ? ` · ${new Date(catalogState.updatedAt).toLocaleTimeString()}` : ""}`
+            : "Open the picker to load models for your selected key, or enter an exact model ID.";
+    $("catalog-status").classList.toggle(
+      "catalog-error",
+      Boolean(catalogState.error || catalogState.capabilitiesError),
+    );
+  }
   function modelOptions() {
     $("aspect-ratio-row").classList.toggle("hidden", referenceGeometry());
     $("video-resolution-row").classList.toggle(
       "hidden",
       mode !== "video" || referenceGeometry(),
     );
-    const models =
-      mode === "video"
-        ? [...new Set([defaults.video, ...videos.map((item) => item.model)])]
-        : [
-            ...new Set([
-              defaults[mode],
-              ...(mode === "image" ? [defaults.edit] : []),
-              ...catalog.filter((id) =>
-                /image|flux|dall-e|imagen|banana/i.test(id),
-              ),
-            ]),
-          ];
+    const options = catalogAvailable
+      ? window.ApixlyModelCatalogV1.buildModelOptions(catalog, videos, mode)
+      : [];
+    const models = options.map((model) => model.id);
+    const manual = document.createElement("option");
+    manual.value = "";
+    manual.textContent = "Enter an exact model ID";
+    $("model-picker").replaceChildren(
+      manual,
+      ...options.map((model) => {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = `${typeof model.name === "string" && model.name ? model.name : model.id}${model.name && model.name !== model.id ? ` · ${model.id}` : ""}${mode === "video" && !model.videoCapability ? " · parameters unavailable" : ""}`;
+        return option;
+      }),
+    );
+    $("model-picker").value = models.includes($("model").value)
+      ? $("model").value
+      : "";
     $("model-options").replaceChildren(
       ...models.map((model) => {
         const option = document.createElement("option");
@@ -81,15 +107,36 @@
       }),
     );
     const capability = videos.find((item) => item.model === $("model").value);
+    renderCatalogStatus(options.length);
+    selectedVideoCapability = capability;
+    if (mode === "video" && !capability) {
+      $("video-duration-row").classList.add("hidden");
+      $("video-resolution-row").classList.add("hidden");
+      $("aspect-ratio-row").classList.add("hidden");
+    } else if (mode === "video")
+      $("video-duration-row").classList.remove("hidden");
     if (mode === "video" && capability) {
-      $("duration").min = String(capability.seconds?.min ?? 1);
-      $("duration").max = String(capability.seconds?.max ?? 30);
+      if (Number.isFinite(capability.seconds?.min))
+        $("duration").min = String(capability.seconds.min);
+      else $("duration").removeAttribute("min");
+      if (Number.isFinite(capability.seconds?.max))
+        $("duration").max = String(capability.seconds.max);
+      else $("duration").removeAttribute("max");
       const duration = Number($("duration").value);
       if (
-        duration < Number($("duration").min) ||
-        duration > Number($("duration").max)
+        !Number.isFinite(capability.seconds?.min) &&
+        !Number.isFinite(capability.seconds?.max)
       )
-        $("duration").value = $("duration").min;
+        $("duration").value = "";
+      else if (
+        (Number.isFinite(capability.seconds?.min) &&
+          duration < capability.seconds.min) ||
+        (Number.isFinite(capability.seconds?.max) &&
+          duration > capability.seconds.max)
+      )
+        $("duration").value = Number.isFinite(capability.seconds?.min)
+          ? String(capability.seconds.min)
+          : "";
       if (Array.isArray(capability.resolutions)) {
         const previous = $("resolution").value;
         $("resolution").replaceChildren(
@@ -112,7 +159,7 @@
         mode === "edit"
           ? "Start with Gemini for reference edits. Grok image editing is not qualified in this release."
           : mode === "video"
-            ? "Enter an exact video model ID. Supported duration and references vary by model."
+            ? "Capability details are unavailable for this exact model. Use documented advanced parameters; reference support is checked before submitting."
             : "Choose an image model available to your Apixly key. No model is silently substituted.";
   }
   function setMode(next) {
@@ -190,6 +237,14 @@
   for (const tab of document.querySelectorAll(".mode-tab"))
     tab.addEventListener("click", () => setMode(tab.dataset.mode));
   $("model").addEventListener("change", modelOptions);
+  $("model").addEventListener("focus", () => send("requestCatalog"));
+  $("model-picker").addEventListener("focus", () => send("requestCatalog"));
+  $("model-picker").addEventListener("change", () => {
+    if ($("model-picker").value) $("model").value = $("model-picker").value;
+    else $("model").focus();
+    modelOptions();
+  });
+  $("refresh-catalog").addEventListener("click", () => send("refreshCatalog"));
   $("prompt").addEventListener("input", () => {
     $("prompt-count").textContent =
       `${$("prompt").value.length.toLocaleString()} / 20,000`;
@@ -269,9 +324,13 @@
       if (!advanced || typeof advanced !== "object" || Array.isArray(advanced))
         throw new Error("Advanced parameters must be a JSON object.");
       const params = {};
-      if (!referenceGeometry() && $("aspect-ratio").value)
+      if (
+        !referenceGeometry() &&
+        (mode !== "video" || selectedVideoCapability) &&
+        $("aspect-ratio").value
+      )
         params.aspect_ratio = $("aspect-ratio").value;
-      if (mode === "video") {
+      if (mode === "video" && selectedVideoCapability) {
         if ($("duration").value) params.seconds = Number($("duration").value);
         if (!referenceGeometry() && $("resolution").value)
           params.resolution = $("resolution").value;
@@ -340,8 +399,16 @@
         "Generated image link attached. Review the explicit video model and parameters, then select Generate video. No video has been submitted.",
       );
     } else if (message.type === "catalog") {
-      catalog = Array.isArray(message.models) ? message.models : [];
-      videos = Array.isArray(message.videos) ? message.videos : [];
+      if (message.available) {
+        catalog = Array.isArray(message.models) ? message.models : [];
+        videos = Array.isArray(message.videos) ? message.videos : [];
+        catalogAvailable = true;
+      } else if (message.clear) {
+        catalog = [];
+        videos = [];
+        catalogAvailable = false;
+      }
+      catalogState = message;
       modelOptions();
     } else if (message.type === "busy") {
       setBusy(Boolean(message.value));

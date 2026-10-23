@@ -1165,3 +1165,22 @@ body.vscode-high-contrast textarea {
   color: var(--muted);
   font-size: 11px;
 }
+.catalog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.catalog-heading label {
+  margin: 0;
+}
+#refresh-catalog {
+  min-height: 44px;
+}
+#catalog-status {
+  overflow-wrap: anywhere;
+}
+.catalog-error {
+  color: var(--vscode-errorForeground, #fca5a5);
+}

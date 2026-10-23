@@ -1,5 +1,9 @@
 "use strict";
 const CLIENT_AGENT = `apixly-vscode-media/${require("../package.json").version}`;
+const {
+  parseModelCatalog,
+  parseVideoConfig,
+} = require("../media/model-catalog.js");
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -254,16 +258,14 @@ function createClient(key, fetcher = globalThis.fetch) {
   }
   return {
     async models() {
-      const result = await api("/models", "GET");
-      return Array.isArray(result.data)
-        ? result.data
-            .filter((item) => typeof item?.id === "string")
-            .map((item) => item.id)
-        : [];
+      return parseModelCatalog(await api("/models/list", "GET")).data;
+    },
+    async modelCatalog() {
+      return parseModelCatalog(await api("/models/list", "GET"));
     },
     async videoCapabilities() {
       const result = await api("/video/config", "GET");
-      return Array.isArray(result.data) ? result.data : [];
+      return parseVideoConfig(result);
     },
     async submitImage({ model, prompt, params = {}, refs = [], mask }) {
       validateIdentity(model, "model ID");

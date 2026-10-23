@@ -6,6 +6,14 @@ const crypto = require("node:crypto");
 const { composeCreativePrompt } = require("../media/creative-controls.js");
 const { renderCreativePanel } = require("./creative-panel.cjs");
 const {
+  parseModelCatalog,
+  parseVideoConfig,
+} = require("../media/model-catalog.js");
+const {
+  createCatalogResolver,
+  catalogIdentity,
+} = require("./catalog-cache.cjs");
+const {
   createClient,
   parseStudioParameters,
   pollTask,
@@ -31,6 +39,8 @@ const SIMPLE = new Set([
   "clearMask",
   "cancelPolling",
   "clearVideoReferences",
+  "requestCatalog",
+  "refreshCatalog",
 ]);
 const IMAGE_TYPES = {
   png: "image/png",
@@ -150,6 +160,7 @@ function renderHtml({
   logoUri,
   creativeUri,
   creativeUiUri,
+  catalogUri,
   nonce,
 }) {
   const csp = `default-src 'none'; img-src ${cspSource} data:; media-src ${cspSource}; style-src ${cspSource}; script-src 'nonce-${nonce}'; connect-src 'none'; font-src ${cspSource};`;
@@ -161,7 +172,7 @@ function renderHtml({
 <details id="settings" class="settings glass"><summary>Account & resources</summary><div class="settings-content"><p>Your key stays in VS Code SecretStorage. Prompts and selected references are sent to Apixly and the chosen model service.</p><div class="inline-actions"><button class="button secondary compact" data-action="setKey">Set / change API key</button><button class="button ghost compact" data-action="clearKey">Remove key</button></div><nav class="resource-links" aria-label="Apixly resources"><a href="https://apixly.ai" data-link="home">apixly.ai ↗</a><a href="https://platform.apixly.ai/models" data-link="models">Models & prices ↗</a><a href="https://platform.apixly.ai/keys" data-link="console">API console ↗</a><a href="https://platform.apixly.ai/usage/logs" data-link="usage">Usage & billing ↗</a><a href="https://apixly.ai/docs" data-link="docs">API docs ↗</a></nav></div></details>
 <main class="workspace-grid"><section class="composer glass"><div class="section-label"><span>01 / CREATE</span><a href="https://platform.apixly.ai/models" data-link="models">Explore models ↗</a></div>
 <div class="mode-tabs" role="tablist" aria-label="Creation type"><button class="mode-tab active" role="tab" aria-selected="true" data-mode="image">✦ Image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="edit">◈ Edit image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="video">▷ Video</button></div>
-<form id="creation-form"><label for="model">Model <span class="label-hint">Exact model ID</span></label><input id="model" name="model" list="model-options" value="grok-imagine-image" placeholder="Choose or enter a model ID" required maxlength="200" autocomplete="off"><datalist id="model-options"></datalist><p id="model-hint" class="field-hint">Choose any image model available to your Apixly key.</p>
+<form id="creation-form"><div class="catalog-heading"><label for="model-picker">Available models</label><button id="refresh-catalog" type="button" class="button ghost compact">Refresh models</button></div><select id="model-picker" aria-label="Available models"><option value="">Enter an exact model ID</option></select><p id="catalog-status" class="field-hint" role="status">Open the picker to load models for your selected key.</p><label for="model">Exact model ID <span class="label-hint">Editable · never silently replaced</span></label><input id="model" name="model" list="model-options" value="grok-imagine-image" placeholder="Choose or enter a model ID" required maxlength="200" autocomplete="off"><datalist id="model-options"></datalist><p id="model-hint" class="field-hint">Choose any image model available to your Apixly key.</p>
 <label for="prompt">Your idea</label><textarea id="prompt" name="prompt" rows="5" maxlength="20000" placeholder="A sculptural glass object, electric blue light, a quiet studio. Describe what you want to see…"></textarea><div class="prompt-footer"><span>Be specific about subject, light, and composition.</span><span id="prompt-count">0 / 20,000</span></div>
 ${renderCreativePanel()}
 <div id="reference-section" class="reference-section hidden"><div class="label-row"><span class="field-label">Reference images</span><button type="button" class="text-button" id="clear-references">Clear</button></div><button type="button" id="pick-references" class="dropzone"><span class="dropzone-symbol">＋</span><strong>Choose reference images</strong><small>PNG, JPG, WebP, GIF, AVIF · up to 20 MiB each</small></button><div id="reference-list" class="reference-list"></div></div>
@@ -170,7 +181,7 @@ ${renderCreativePanel()}
 <p class="billing-note"><span>◈</span> Free extension. Generation uses your Apixly balance. <a href="https://platform.apixly.ai/models" data-link="models">View prices ↗</a></p><button id="generate" type="submit" class="button primary generate-button"><span id="generate-label">Generate image</span><span>↗</span></button></form></section>
 <section class="output-column"><div class="output glass"><div class="section-label"><span>02 / YOUR OUTPUT</span><span id="output-status" class="status-chip">Ready when you are</span></div><div id="empty-output" class="empty-output"><div class="orbit"><div class="orbit-inner">✦</div></div><h2>A little imagination.<br>A whole new possibility.</h2><p>Your finished image or video appears here.<br>Preview it, then save it straight into your project.</p></div><div id="progress-section" class="progress-section hidden" aria-live="polite"><div class="progress-heading"><span class="spinner"></span><strong id="progress-title">Creating your asset</strong></div><div class="progress-track"><div id="progress-bar"></div></div><p id="progress-detail">Preparing your request…</p><p id="task-id" class="task-id"></p><button id="cancel-polling" class="button secondary compact">Stop waiting</button><p class="fine-print">Stops local polling only. The upstream task may continue and incur charges.</p></div><div id="results" class="results"></div><div id="message" class="message hidden" role="status"></div></div>
 <section class="history glass"><div class="section-label"><span>03 / KEEP GOING</span><span id="history-count">Task history</span></div><label for="task-history" class="sr-only">Recent tasks</label><select id="task-history"><option value="">Choose a recent task</option></select><div class="resume-controls"><select id="resume-kind" aria-label="Existing task type"><option value="image">Image task</option><option value="video">Video task</option></select><input id="resume-id" placeholder="Or paste a task ID" aria-label="Existing task ID"><button id="resume-task" class="button secondary compact">Resume</button></div><p class="field-hint">Reloaded VS Code? Resume by task ID. This never submits a new generation.</p></section></section></main>
-<footer><span>Made for your creative workflow.</span><a href="https://apixly.ai" data-link="home">Powered by apixly.ai ↗</a></footer></div><script nonce="${escaped(nonce)}" src="${escaped(creativeUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(creativeUiUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(scriptUri)}"></script></body></html>`;
+<footer><span>Made for your creative workflow.</span><a href="https://apixly.ai" data-link="home">Powered by apixly.ai ↗</a></footer></div><script nonce="${escaped(nonce)}" src="${escaped(catalogUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(creativeUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(creativeUiUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(scriptUri)}"></script></body></html>`;
 }
 
 function createStudio({
@@ -180,6 +191,7 @@ function createStudio({
   cacheRoot,
   clientFactory = createClient,
   actions,
+  catalogResolver = createCatalogResolver(),
 }) {
   let selected = [];
   let videoReferences = [];
@@ -187,6 +199,8 @@ function createStudio({
   let busy = false;
   let disposed = false;
   let controller;
+  let catalogEpoch = 0;
+  let activeCatalogIdentity;
   const assets = new Map();
   const send = (message) =>
     disposed
@@ -436,18 +450,73 @@ function createStudio({
       filename: path.basename(destination.fsPath),
     });
   }
-  async function publishCatalog() {
-    if (!(await context.secrets.get("apixlyMedia.apiKey"))) return;
-    const apiClient = await api();
-    const metadata = await Promise.allSettled([
-      apiClient.models(),
-      apiClient.videoCapabilities(),
-    ]);
-    await send({
-      type: "catalog",
-      models: metadata[0].status === "fulfilled" ? metadata[0].value : [],
-      videos: metadata[1].status === "fulfilled" ? metadata[1].value : [],
-    });
+  async function publishCatalog({ cachedOnly = false, force = false } = {}) {
+    const epoch = ++catalogEpoch;
+    const key = await context.secrets.get("apixlyMedia.apiKey");
+    if (disposed || epoch !== catalogEpoch) return;
+    if (!key) {
+      if (activeCatalogIdentity)
+        catalogResolver.invalidate(activeCatalogIdentity);
+      activeCatalogIdentity = undefined;
+      await send({
+        type: "catalog",
+        models: [],
+        videos: [],
+        available: false,
+        clear: true,
+      });
+      return;
+    }
+    const identity = catalogIdentity({ mode: "manual", key });
+    if (activeCatalogIdentity && activeCatalogIdentity !== identity)
+      catalogResolver.invalidate(activeCatalogIdentity);
+    activeCatalogIdentity = identity;
+    const publish = async (status) => {
+      if (
+        !disposed &&
+        epoch === catalogEpoch &&
+        activeCatalogIdentity === identity
+      )
+        await send({ type: "catalog", ...status, clear: !status.available });
+    };
+    if (cachedOnly) {
+      await publish(catalogResolver.peek(identity));
+      return;
+    }
+    const cached = catalogResolver.peek(identity);
+    await publish({ ...cached, refreshing: true });
+    const status = await catalogResolver.read(
+      identity,
+      async () => {
+        const client = clientFactory(key);
+        const results = await Promise.allSettled([
+          typeof client.modelCatalog === "function"
+            ? client.modelCatalog()
+            : client.models().then((data) => ({ data })),
+          client.videoCapabilities(),
+        ]);
+        if (results[0].status === "rejected") throw results[0].reason;
+        const envelope = parseModelCatalog(results[0].value);
+        const models = envelope.data;
+        const allowed = new Set(models.map((model) => model.id));
+        let videos;
+        let capabilitiesError = null;
+        try {
+          if (results[1].status === "rejected") throw results[1].reason;
+          videos = parseVideoConfig({ data: results[1].value });
+        } catch {
+          videos = catalogResolver.peek(identity).videos || [];
+          capabilitiesError = videos.length
+            ? "Video parameters are unavailable. Showing saved video parameters; try Refresh models."
+            : "Video parameters are unavailable. Image models are ready; try Refresh models for video controls.";
+        }
+        videos = videos.filter((row) => allowed.has(row.model));
+        const { data, ...metadata } = envelope;
+        return { models, videos, metadata, capabilitiesError };
+      },
+      { force, onUpdate: publish },
+    );
+    await publish(status);
   }
   return {
     async handle(raw) {
@@ -456,7 +525,12 @@ function createStudio({
         const message = validateMessage(raw);
         if (message.type === "ready") {
           await state();
-          await publishCatalog();
+          await publishCatalog({ cachedOnly: true });
+        } else if (
+          message.type === "requestCatalog" ||
+          message.type === "refreshCatalog"
+        ) {
+          await publishCatalog({ force: message.type === "refreshCatalog" });
         } else if (message.type === "copyPrompt") {
           await vscode.env.clipboard.writeText(message.prompt);
           await send({ type: "promptCopied" });
@@ -471,7 +545,7 @@ function createStudio({
             message.type === "setKey" ? "setApiKey" : "clearApiKey"
           ]();
           await state();
-          if (message.type === "setKey") await publishCatalog();
+          await publishCatalog({ cachedOnly: true });
         } else if (
           message.type === "selectReferences" ||
           message.type === "selectMask"
@@ -550,6 +624,7 @@ function createStudio({
     },
     async dispose() {
       disposed = true;
+      catalogEpoch++;
       controller?.abort();
       selected = [];
       videoReferences = [];

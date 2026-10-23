@@ -481,6 +481,8 @@ function createCommands(context, vscode, options = {}) {
 
 function registerStudio(context, vscode, actions) {
   const { createStudio, renderHtml } = require("./panel.cjs");
+  const { createCatalogResolver } = require("./catalog-cache.cjs");
+  const catalogResolver = createCatalogResolver();
   const crypto = require("node:crypto");
   const open = () => {
     if (activePanel) {
@@ -518,6 +520,7 @@ function registerStudio(context, vscode, actions) {
       webview: panel.webview,
       cacheRoot,
       actions,
+      catalogResolver,
     });
     activeStudio = studio;
     const secretChanges = context.secrets.onDidChange?.((event) =>
@@ -540,6 +543,7 @@ function registerStudio(context, vscode, actions) {
       logoUri: resource("icon.png"),
       creativeUri: resource("creative-controls.js"),
       creativeUiUri: resource("creative-ui.js"),
+      catalogUri: resource("model-catalog.js"),
       nonce: crypto.randomBytes(24).toString("hex"),
     });
   };
