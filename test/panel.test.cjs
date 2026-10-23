@@ -144,8 +144,117 @@ async function setup(t) {
       clearApiKey: async () => undefined,
     },
   });
-  return { root, messages, errors, state, studio, calls, client, vscode };
+  return {
+    root,
+    messages,
+    errors,
+    state,
+    studio,
+    calls,
+    client,
+    vscode,
+    context,
+  };
 }
+
+test("host recomputes typed creative controls for image, edit and video without adding vendor parameters", async (t) => {
+  const { composeCreativePrompt } = require("../media/creative-controls.js");
+  for (const kind of ["image", "edit", "video"]) {
+    const f = await setup(t);
+    const tools = {
+      angle: { enabled: true, yaw: 180, pitch: 30 },
+      lighting: { enabled: true, preset: "goldenHour", rimLight: true },
+      camera: { enabled: true, focal: 85, aperture: "f/1.8" },
+    };
+    const prompt = "  Keep my toy car.\n Original details.  ";
+    if (kind === "edit") await f.studio.handle({ type: "selectReferences" });
+    f.client.submitVideo = async (request) => {
+      f.calls.push(request);
+      return { id: "video-task", status: "queued" };
+    };
+    await f.studio.handle({
+      type: "submit",
+      kind,
+      model: "exact-model",
+      prompt,
+      params: '{"seed":7}',
+      tools,
+    });
+    assert.equal(f.calls.length, 1);
+    assert.equal(
+      f.calls[0].prompt,
+      composeCreativePrompt({
+        prompt,
+        mode: kind === "edit" ? "edit" : "generate",
+        tools,
+      }).final_prompt,
+    );
+    assert.equal(f.calls[0].model, "exact-model");
+    assert.deepEqual(f.calls[0].params, { seed: 7 });
+    assert(!Object.hasOwn(f.calls[0], "tools"));
+    assert(!JSON.stringify([...f.state]).includes("Keep my toy car"));
+    assert(!JSON.stringify([...f.state]).includes("goldenHour"));
+    if (kind === "edit")
+      assert.deepEqual(f.calls[0].refs[0].bytes, Buffer.from([1, 2, 3]));
+    await f.studio.dispose();
+  }
+});
+
+test("invalid creative settings and forged final prompt fail before a client or paid POST", async (t) => {
+  const f = await setup(t);
+  let secretReads = 0;
+  f.context.secrets.get = async () => {
+    secretReads++;
+    return "actual-secret";
+  };
+  for (const extra of [
+    { tools: { angle: { enabled: true, pitch: 91 } } },
+    { tools: { camera: { enabled: "yes" } } },
+    { final_prompt: "forged" },
+    {
+      prompt: "x".repeat(20000),
+      tools: { camera: { enabled: true, focal: 85 } },
+    },
+  ]) {
+    await f.studio.handle({
+      type: "submit",
+      kind: "image",
+      model: "m",
+      prompt: "p",
+      params: "{}",
+      ...extra,
+    });
+  }
+  assert.equal(secretReads, 0);
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.messages.filter((m) => m.type === "error").length, 4);
+});
+
+test("the creative interface has accessible controls and loads the same compiler before its controller", () => {
+  const html = renderHtml({
+    cspSource: "vscode-resource:",
+    scriptUri: "vscode-resource:/studio.js",
+    styleUri: "vscode-resource:/studio.css",
+    logoUri: "vscode-resource:/icon.png",
+    creativeUri: "vscode-resource:/creative-controls.js",
+    creativeUiUri: "vscode-resource:/creative-ui.js",
+    nonce: "nonce",
+  });
+  assert.match(html, /id="creative-controls"/);
+  assert.match(html, /id="final-prompt"[^>]*readonly/);
+  assert.match(html, /AI prompt controls/);
+  assert.match(html, /id="angle-enabled"/);
+  assert.match(html, /id="lighting-enabled"/);
+  assert.match(html, /id="camera-enabled"/);
+  assert(
+    html.indexOf('src="vscode-resource:/creative-controls.js"') <
+      html.indexOf('src="vscode-resource:/creative-ui.js"'),
+  );
+  assert(
+    html.indexOf('src="vscode-resource:/creative-ui.js"') <
+      html.indexOf('src="vscode-resource:/studio.js"'),
+  );
+});
 
 test("panel uses host-owned references, emits previews without secrets and saves only a selected asset", async (t) => {
   const f = await setup(t);
@@ -449,4 +558,61 @@ test("a local capability rejection preserves the existing paid preview instead o
   );
   assert.equal(f.calls.length, 1);
   await f.studio.dispose();
+});
+
+test("empty base with enabled style is valid but an empty final prompt is rejected before inference", () => {
+  const result = validateMessage({
+    type: "submit",
+    kind: "image",
+    model: "m",
+    prompt: "",
+    params: "{}",
+    tools: { camera: { enabled: true, focal: 85 } },
+  });
+  assert.equal(result.prompt, "Lens: 85mm telephoto");
+  assert.throws(() =>
+    validateMessage({
+      type: "submit",
+      kind: "image",
+      model: "m",
+      prompt: "  ",
+      params: "{}",
+    }),
+  );
+  const html = renderHtml({
+    cspSource: "vscode-resource:",
+    scriptUri: "studio.js",
+    styleUri: "studio.css",
+    logoUri: "icon.png",
+    nonce: "n",
+  });
+  assert.doesNotMatch(html, /<textarea id="prompt"[^>]*\brequired\b/);
+});
+
+test("Copy final prompt recomputes typed settings without a key, HTTP or task persistence", async (t) => {
+  const f = await setup(t);
+  const copied = [];
+  f.context.secrets.get = async () => {
+    throw Error("Copy must not read a key");
+  };
+  f.vscode.env.clipboard = { writeText: async (value) => copied.push(value) };
+  const payload = {
+    type: "copyPrompt",
+    kind: "edit",
+    prompt: "Keep car",
+    tools: { lighting: { enabled: true, preset: "goldenHour" } },
+  };
+  await f.studio.handle(payload);
+  assert.equal(copied.length, 1);
+  assert(copied[0].includes("Change the lighting"));
+  assert(
+    copied[0].endsWith(
+      "Preserve all subject and scene details that are not explicitly requested to change.",
+    ),
+  );
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.state.size, 0);
+  assert(f.messages.some((m) => m.type === "promptCopied"));
+  await f.studio.handle({ ...payload, final_prompt: "forged" });
+  assert.equal(copied.length, 1);
 });

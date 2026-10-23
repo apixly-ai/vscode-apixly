@@ -393,12 +393,12 @@ test("support user agent is sent only to Apixly API routes, never result storage
   await client.download({}, { kind: "video", id: "v" });
   assert.equal(
     calls[0].init.headers["user-agent"],
-    "apixly-vscode-media/0.1.0",
+    `apixly-vscode-media/${require("../package.json").version}`,
   );
   assert.equal(calls[1].init.headers["user-agent"], undefined);
   assert.equal(
     calls[2].init.headers["user-agent"],
-    "apixly-vscode-media/0.1.0",
+    `apixly-vscode-media/${require("../package.json").version}`,
   );
 });
 

@@ -2,7 +2,7 @@
   "name": "apixly-media",
   "displayName": "Apixly Media",
   "description": "A creative studio for apixly.ai images, edits and video: preview, resume and save in VS Code. Free extension; pay-as-you-go API.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "publisher": "apixly",
   "license": "MIT",
   "author": {

@@ -15,6 +15,7 @@
   let catalog = [];
   let videos = [];
   let history = [];
+  let creativeUI;
   const send = (type, extra = {}) => host.postMessage({ type, ...extra });
   function showMessage(message, kind = "") {
     $("message").textContent = message;
@@ -43,6 +44,9 @@
       control.disabled = value;
     $("aspect-ratio").disabled = value || referenceGeometry();
     $("resolution").disabled = value || referenceGeometry();
+    creativeUI?.setBusy(value);
+    $("generate").disabled =
+      value || !hasKey || (creativeUI && !creativeUI.canSubmit());
     $("generate-label").textContent = value
       ? "Working on your asset…"
       : mode === "video"
@@ -132,6 +136,7 @@
           : "A sculptural glass object, electric blue light, a quiet studio. Describe what you want to see…";
     modelOptions();
     setBusy(busy);
+    creativeUI?.refresh();
   }
   function renderHistory() {
     $("task-history").replaceChildren();
@@ -188,6 +193,7 @@
   $("prompt").addEventListener("input", () => {
     $("prompt-count").textContent =
       `${$("prompt").value.length.toLocaleString()} / 20,000`;
+    creativeUI?.refresh();
   });
   $("pick-references").addEventListener("click", () =>
     send("selectReferences"),
@@ -196,6 +202,21 @@
     send("clearReferences"),
   );
   $("cancel-polling").addEventListener("click", () => send("cancelPolling"));
+  $("copy-final-prompt").addEventListener("click", () => {
+    try {
+      creativeUI.refresh();
+      send("copyPrompt", {
+        kind: mode,
+        prompt: $("prompt").value,
+        tools: creativeUI.getTools(),
+      });
+    } catch (error) {
+      showMessage(
+        error.message || "Check the final prompt before copying.",
+        "error",
+      );
+    }
+  });
   $("attach-video-url").addEventListener("click", () => {
     const url = $("video-reference-url").value.trim();
     if (!url) {
@@ -232,6 +253,11 @@
     event.preventDefault();
     if (busy) return;
     try {
+      creativeUI.refresh();
+      if (!creativeUI.canSubmit())
+        throw new Error(
+          "Enter a prompt or enable creative instructions first.",
+        );
       if (!hasKey) throw new Error("Connect an Apixly API key first.");
       if (mode === "video" && $("video-reference-url").value.trim())
         throw new Error(
@@ -251,12 +277,15 @@
           params.resolution = $("resolution").value;
       }
       const merged = { ...params, ...advanced };
+      creativeUI.refresh();
+      const tools = creativeUI.getTools();
       clearMessage();
       send("submit", {
         kind: mode,
         model: $("model").value,
         prompt: $("prompt").value,
         params: JSON.stringify(merged),
+        tools,
       });
     } catch (error) {
       showMessage(
@@ -296,6 +325,7 @@
       $("onboarding").classList.toggle("hidden", hasKey);
       renderHistory();
       renderReferences();
+      creativeUI?.setReference(references[0]?.previewUri);
       setBusy(busy);
     } else if (message.type === "videoPreset") {
       setMode("video");
@@ -394,11 +424,21 @@
       );
     } else if (message.type === "saved")
       showMessage(`Saved ${message.filename} to your project.`, "success");
+    else if (message.type === "promptCopied")
+      $("creative-copy-status").textContent = "Copied to clipboard.";
     else if (message.type === "error") {
       showMessage(message.message, "error");
       if (!busy) $("output-status").textContent = "Needs attention";
     }
   });
+  creativeUI = window.ApixlyCreativeControlsUI.installCreativeControls(
+    document,
+    {
+      getPrompt: () => $("prompt").value,
+      getMode: () => (mode === "edit" ? "edit" : "generate"),
+      onChange: () => setBusy(busy),
+    },
+  );
   setMode("image");
   send("ready");
 })();

@@ -1,4 +1,5 @@
 "use strict";
+const CLIENT_AGENT = `apixly-vscode-media/${require("../package.json").version}`;
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -212,7 +213,7 @@ function createClient(key, fetcher = globalThis.fetch) {
   async function api(route, method, body, signal) {
     const headers = {
       authorization: `Bearer ${key}`,
-      "user-agent": "apixly-vscode-media/0.1.0",
+      "user-agent": CLIENT_AGENT,
     };
     const form = body instanceof FormData;
     if (body && !form) {
@@ -397,7 +398,7 @@ function createClient(key, fetcher = globalThis.fetch) {
       if (!asset.url && job.kind === "video") {
         url = `${BASE}/videos/${encodeURIComponent(validateIdentity(job.id, "task ID"))}/content`;
         headers.authorization = `Bearer ${key}`;
-        headers["user-agent"] = "apixly-vscode-media/0.1.0";
+        headers["user-agent"] = CLIENT_AGENT;
       } else {
         try {
           url = new URL(asset.url);

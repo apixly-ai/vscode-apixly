@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Add optional Viewpoint, Lighting and Lens controls with local direction diagrams, presets and synchronized numeric inputs.
+- Show the exact final prompt and provide keyless Copy final prompt with authoritative host recomputation.
+- Keep every tool off by default; disabling restores the original prompt exactly and reference edits preserve details not requested to change.
+- Reject invalid, forged or overlong creative settings before inference. Controls and previews do not make extra model requests or persist prompt data.
+- Synchronize the existing Apixly support User-Agent with the release version; third-party downloads still receive neither that header nor the API key.
+
 ## 0.1.2 — 2026-10-23
 
 - Use direct image URLs so Marketplace artwork loads without a GitHub web session.

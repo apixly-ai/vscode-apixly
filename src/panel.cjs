@@ -3,6 +3,8 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { composeCreativePrompt } = require("../media/creative-controls.js");
+const { renderCreativePanel } = require("./creative-panel.cjs");
 const {
   createClient,
   parseStudioParameters,
@@ -54,6 +56,16 @@ function shortString(value, maximum = 200) {
     !Array.from(value).some((character) => character.charCodeAt(0) < 32)
   );
 }
+function creativePrompt(message) {
+  const composed = composeCreativePrompt({
+    prompt: message.prompt,
+    mode: message.kind === "edit" ? "edit" : "generate",
+    ...(message.tools === undefined ? {} : { tools: message.tools }),
+  });
+  if (!composed.final_prompt.trim())
+    throw problem("Enter a prompt or enable creative instructions first.");
+  return composed.final_prompt;
+}
 
 function validateMessage(message) {
   if (
@@ -96,12 +108,11 @@ function validateMessage(message) {
     return message;
   }
   if (message.type === "submit") {
-    exactKeys(message, ["type", "kind", "model", "prompt", "params"]);
+    exactKeys(message, ["type", "kind", "model", "prompt", "params", "tools"]);
     if (
       !["image", "edit", "video"].includes(message.kind) ||
       !shortString(message.model) ||
       typeof message.prompt !== "string" ||
-      !message.prompt.trim() ||
       message.prompt.length > 20000 ||
       typeof message.params !== "string" ||
       message.params.length > 32768
@@ -109,11 +120,18 @@ function validateMessage(message) {
       throw problem("Enter a model ID, prompt, and valid parameters.");
     return {
       ...message,
+      prompt: creativePrompt(message),
       params: parseStudioParameters(
         message.params,
         message.kind === "video" ? "video" : "image",
       ),
     };
+  }
+  if (message.type === "copyPrompt") {
+    exactKeys(message, ["type", "kind", "prompt", "tools"]);
+    if (!["image", "edit", "video"].includes(message.kind))
+      throw problem("Choose a valid creation mode.");
+    return { ...message, prompt: creativePrompt(message) };
   }
   throw problem("Unknown panel action.");
 }
@@ -125,7 +143,15 @@ function escaped(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
-function renderHtml({ cspSource, scriptUri, styleUri, logoUri, nonce }) {
+function renderHtml({
+  cspSource,
+  scriptUri,
+  styleUri,
+  logoUri,
+  creativeUri,
+  creativeUiUri,
+  nonce,
+}) {
   const csp = `default-src 'none'; img-src ${cspSource} data:; media-src ${cspSource}; style-src ${cspSource}; script-src 'nonce-${nonce}'; connect-src 'none'; font-src ${cspSource};`;
   return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${escaped(csp)}"><link rel="stylesheet" href="${escaped(styleUri)}"><title>Apixly Media Studio</title></head>
 <body><div class="app-shell">
@@ -136,14 +162,15 @@ function renderHtml({ cspSource, scriptUri, styleUri, logoUri, nonce }) {
 <main class="workspace-grid"><section class="composer glass"><div class="section-label"><span>01 / CREATE</span><a href="https://platform.apixly.ai/models" data-link="models">Explore models ↗</a></div>
 <div class="mode-tabs" role="tablist" aria-label="Creation type"><button class="mode-tab active" role="tab" aria-selected="true" data-mode="image">✦ Image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="edit">◈ Edit image</button><button class="mode-tab" role="tab" aria-selected="false" data-mode="video">▷ Video</button></div>
 <form id="creation-form"><label for="model">Model <span class="label-hint">Exact model ID</span></label><input id="model" name="model" list="model-options" value="grok-imagine-image" placeholder="Choose or enter a model ID" required maxlength="200" autocomplete="off"><datalist id="model-options"></datalist><p id="model-hint" class="field-hint">Choose any image model available to your Apixly key.</p>
-<label for="prompt">Your idea</label><textarea id="prompt" name="prompt" rows="5" maxlength="20000" placeholder="A sculptural glass object, electric blue light, a quiet studio. Describe what you want to see…" required></textarea><div class="prompt-footer"><span>Be specific about subject, light, and composition.</span><span id="prompt-count">0 / 20,000</span></div>
+<label for="prompt">Your idea</label><textarea id="prompt" name="prompt" rows="5" maxlength="20000" placeholder="A sculptural glass object, electric blue light, a quiet studio. Describe what you want to see…"></textarea><div class="prompt-footer"><span>Be specific about subject, light, and composition.</span><span id="prompt-count">0 / 20,000</span></div>
+${renderCreativePanel()}
 <div id="reference-section" class="reference-section hidden"><div class="label-row"><span class="field-label">Reference images</span><button type="button" class="text-button" id="clear-references">Clear</button></div><button type="button" id="pick-references" class="dropzone"><span class="dropzone-symbol">＋</span><strong>Choose reference images</strong><small>PNG, JPG, WebP, GIF, AVIF · up to 20 MiB each</small></button><div id="reference-list" class="reference-list"></div></div>
 <div id="video-reference-section" class="reference-section hidden"><div class="label-row"><span class="field-label">Video reference image URL</span><button type="button" class="text-button" id="clear-video-references">Clear</button></div><div class="url-entry"><input id="video-reference-url" type="url" placeholder="https://…/image.png" aria-label="Public HTTPS video reference URL"><button type="button" id="attach-video-url" class="button secondary compact">Attach URL</button></div><div id="video-reference-list" class="reference-list"></div><p class="field-hint">Current qualified Grok reference video requires a public HTTPS image link. Local files are not uploaded or hosted. Or choose “Use for video” on a generated image below.</p></div><div class="parameters"><div id="aspect-ratio-row"><label for="aspect-ratio">Aspect ratio</label><select id="aspect-ratio"><option value="">Model default</option><option value="1:1">1:1</option><option>16:9</option><option>9:16</option><option>4:3</option><option>3:4</option></select></div><div id="video-duration-row" class="hidden"><label for="duration">Duration <span class="label-hint">seconds</span></label><input id="duration" type="number" min="1" max="30" step="1" value="1"></div><div id="video-resolution-row" class="hidden"><label for="resolution">Resolution</label><select id="resolution"><option value="">Model default</option><option>480p</option><option selected>720p</option><option>1080p</option><option>4k</option></select></div></div>
 <details class="advanced"><summary>Advanced model parameters</summary><p class="field-hint">Optional JSON. These explicit values take precedence over the fields above. Supported options depend on the exact model.</p><textarea id="advanced-params" rows="3" spellcheck="false" aria-label="Advanced model parameters">{}</textarea></details>
 <p class="billing-note"><span>◈</span> Free extension. Generation uses your Apixly balance. <a href="https://platform.apixly.ai/models" data-link="models">View prices ↗</a></p><button id="generate" type="submit" class="button primary generate-button"><span id="generate-label">Generate image</span><span>↗</span></button></form></section>
 <section class="output-column"><div class="output glass"><div class="section-label"><span>02 / YOUR OUTPUT</span><span id="output-status" class="status-chip">Ready when you are</span></div><div id="empty-output" class="empty-output"><div class="orbit"><div class="orbit-inner">✦</div></div><h2>A little imagination.<br>A whole new possibility.</h2><p>Your finished image or video appears here.<br>Preview it, then save it straight into your project.</p></div><div id="progress-section" class="progress-section hidden" aria-live="polite"><div class="progress-heading"><span class="spinner"></span><strong id="progress-title">Creating your asset</strong></div><div class="progress-track"><div id="progress-bar"></div></div><p id="progress-detail">Preparing your request…</p><p id="task-id" class="task-id"></p><button id="cancel-polling" class="button secondary compact">Stop waiting</button><p class="fine-print">Stops local polling only. The upstream task may continue and incur charges.</p></div><div id="results" class="results"></div><div id="message" class="message hidden" role="status"></div></div>
 <section class="history glass"><div class="section-label"><span>03 / KEEP GOING</span><span id="history-count">Task history</span></div><label for="task-history" class="sr-only">Recent tasks</label><select id="task-history"><option value="">Choose a recent task</option></select><div class="resume-controls"><select id="resume-kind" aria-label="Existing task type"><option value="image">Image task</option><option value="video">Video task</option></select><input id="resume-id" placeholder="Or paste a task ID" aria-label="Existing task ID"><button id="resume-task" class="button secondary compact">Resume</button></div><p class="field-hint">Reloaded VS Code? Resume by task ID. This never submits a new generation.</p></section></section></main>
-<footer><span>Made for your creative workflow.</span><a href="https://apixly.ai" data-link="home">Powered by apixly.ai ↗</a></footer></div><script nonce="${escaped(nonce)}" src="${escaped(scriptUri)}"></script></body></html>`;
+<footer><span>Made for your creative workflow.</span><a href="https://apixly.ai" data-link="home">Powered by apixly.ai ↗</a></footer></div><script nonce="${escaped(nonce)}" src="${escaped(creativeUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(creativeUiUri)}"></script><script nonce="${escaped(nonce)}" src="${escaped(scriptUri)}"></script></body></html>`;
 }
 
 function createStudio({
@@ -430,6 +457,9 @@ function createStudio({
         if (message.type === "ready") {
           await state();
           await publishCatalog();
+        } else if (message.type === "copyPrompt") {
+          await vscode.env.clipboard.writeText(message.prompt);
+          await send({ type: "promptCopied" });
         } else if (message.type === "openLink") {
           await vscode.env.openExternal(
             vscode.Uri.parse

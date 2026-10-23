@@ -538,6 +538,8 @@ function registerStudio(context, vscode, actions) {
       scriptUri: resource("studio.js"),
       styleUri: resource("studio.css"),
       logoUri: resource("icon.png"),
+      creativeUri: resource("creative-controls.js"),
+      creativeUiUri: resource("creative-ui.js"),
       nonce: crypto.randomBytes(24).toString("hex"),
     });
   };

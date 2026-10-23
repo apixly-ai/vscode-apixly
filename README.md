@@ -38,6 +38,18 @@ The gallery uses actual outputs from release acceptance on October 23, 2026. Its
 
 Explore [apixly.ai](https://apixly.ai) for the full creative studio. Compare [models and public prices](https://platform.apixly.ai/models), manage [API keys](https://platform.apixly.ai/keys), review [usage and billing](https://platform.apixly.ai/usage/logs), or read the [API documentation](https://apixly.ai/docs). These links are also available in the panel's account area.
 
+## Direct the look before you generate
+
+Open **Creative direction** beneath your prompt to use Apixly's existing creative tools:
+
+- **Viewpoint:** drag the direction diagram, use the arrow buttons or enter azimuth/elevation. Choose an angle preset and framing. Positive elevation places the viewpoint above the subject.
+- **Lighting:** choose a look, place the key light, adjust brightness, specify a light color, add rim light, or describe an additional lighting style.
+- **Lens:** choose camera/lens style cues, a focal length and aperture. Every field can remain unspecified.
+
+All three groups start **off**. The **Final prompt sent to Apixly** preview shows the exact instructions that will be sent; your editable prompt stays intact. **Copy final prompt** also works without an API key. **Turn all off** preserves the settings while returning to your original prompt unchanged, including whitespace. **Reset controls** clears those settings. Reference edits use explicit instructions to preserve subject and scene details that you did not ask to change.
+
+These are **AI prompt instructions**, not a physical light simulation, calibrated lens, precise 3D camera API or an EXIF editor. The diagram is a direction guide, not a generated preview. Results depend on your selected model. Controls and prompt previews run locally without a key or paid request; only the existing **Generate** action submits inference. Settings and additional lighting text stay in this panel's memory and are not added to workspace configuration or task history.
+
 ## Commands
 
 | Command | Action |
