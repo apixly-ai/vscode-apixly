@@ -233,3 +233,21 @@ test("identities isolate keys/accounts/selections and invalidation discards late
   assert.equal(cache.peek(a).available, false);
   assert.equal(cache.peek(b).models[0].id, "key-b");
 });
+
+test("account metadata failure marks saved catalog stale without discarding its identity or options", async () => {
+  const cache = createCatalogResolver();
+  const id = catalogIdentity({
+    mode: "account",
+    connectionId: "c",
+    accountId: "42",
+    keyId: "studixly",
+    revision: 1,
+  });
+  await cache.read(id, async () => snapshot("saved"));
+  const marked = cache.markAccountError(id);
+  assert.equal(marked.available, true);
+  assert.equal(marked.stale, true);
+  assert.equal(marked.models[0].id, "saved");
+  assert.match(marked.error, /account/i);
+  assert.equal(cache.peek(id).stale, true);
+});

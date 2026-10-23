@@ -6,6 +6,12 @@ const MANUAL_KEY = "apixlyMedia.apiKey";
 const CONNECTION_KEY = "apixlyMedia.connectionToken";
 const AUTH_MODE = "apixlyMedia.authMode";
 const problem = (message) => Object.assign(new Error(message), { safe: true });
+const credentialUnavailable = (error) =>
+  [
+    "unauthorized",
+    "selected_key_unavailable",
+    "selected_key_rejected",
+  ].includes(error?.code);
 
 function createCredentialSession({
   context,
@@ -132,10 +138,15 @@ function createCredentialSession({
       return {
         mode: current,
         hasCredential: Boolean(
-          credential && !(current === "account" && accountError),
+          credential &&
+            !(current === "account" && credentialUnavailable(accountError)),
         ),
         hasConnection: Boolean(current === "account" && credential),
         error: current === "account" ? (accountError?.message ?? null) : null,
+        errorCode:
+          current === "account" && accountError
+            ? accountError.code || "metadata_unavailable"
+            : null,
         account: current === "account" ? (metadata ?? null) : null,
         keys: current === "account" ? keys : [],
         busy: Boolean(active || mutating),
@@ -160,7 +171,8 @@ function createCredentialSession({
         current === "account"
           ? await loadAccount(credential, refreshAccount)
           : undefined;
-      if (current === "account" && accountError) throw accountError;
+      if (current === "account" && credentialUnavailable(accountError))
+        throw accountError;
       if (currentEpoch !== epoch || current !== mode())
         throw problem("The active credentials changed. Try again.");
       return {

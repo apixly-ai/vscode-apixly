@@ -94,6 +94,13 @@ function createCatalogResolver({ ttlMs = 600000, now = Date.now } = {}) {
     peek(identity) {
       return status(entries.get(identity));
     },
+    markAccountError(identity) {
+      const entry = entries.get(identity);
+      if (entry?.valid)
+        entry.error =
+          "Could not refresh account information. Saved models may be out of date. Try Refresh account or Refresh models.";
+      return status(entry);
+    },
     async read(identity, load, { force = false, onUpdate } = {}) {
       const entry = entryFor(identity);
       if (entry.snapshot && !force) {

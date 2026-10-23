@@ -794,6 +794,7 @@ test("account panel accepts only typed metadata actions, reuses the active provi
   const session = {
     view: async () => ({
       mode: "account",
+      hasConnection: true,
       hasCredential: true,
       account: connection,
       keys,
@@ -932,4 +933,120 @@ test("closing Studio cancels only its pending local account authorization", asyn
   });
   await f.studio.dispose();
   assert.equal(cancelled, 1);
+});
+
+test("each account picker refresh resolves authoritative revision before choosing the cached identity; cached-only does no metadata I/O", async (t) => {
+  let authoritative = 1,
+    observed = 1;
+  const resolutions = [],
+    loads = [];
+  const account = () => ({
+    connection_id: "c",
+    account: { id: "42" },
+    selected_key: { id: "studixly" },
+    selection_revision: observed,
+  });
+  const session = {
+    view: async () => ({
+      mode: "account",
+      hasConnection: true,
+      hasCredential: true,
+      account: account(),
+      keys: [],
+    }),
+    resolve: async (options) => {
+      resolutions.push(options);
+      if (options.refreshAccount) observed = authoritative;
+      const revision = observed;
+      return {
+        identity: `account:${String(revision).repeat(64)}`,
+        client: {
+          models: async () => {
+            loads.push(revision);
+            return [{ id: `revision-${revision}`, type: "image" }];
+          },
+          videoCapabilities: async () => [],
+        },
+      };
+    },
+  };
+  const f = await setup(t, { credentialSession: session });
+  await f.studio.handle({ type: "ready" });
+  assert.equal(resolutions.length, 0);
+  await f.studio.handle({ type: "requestCatalog" });
+  assert.equal(resolutions[0].refreshAccount, true);
+  authoritative = 2;
+  await f.studio.handle({ type: "requestCatalog" });
+  assert.deepEqual(loads, [1, 2]);
+  assert.equal(
+    f.messages.filter((m) => m.type === "catalog").at(-1).models[0].id,
+    "revision-2",
+  );
+});
+
+test("transient account metadata errors retain stale same-identity models; invalid connection clears them", async (t) => {
+  let failure;
+  const account = {
+    connection_id: "c",
+    account: { id: "42" },
+    selected_key: { id: "studixly" },
+    selection_revision: 1,
+  };
+  const session = {
+    view: async () => ({
+      mode: "account",
+      hasConnection: true,
+      hasCredential: failure?.code !== "unauthorized",
+      account,
+      keys: [],
+      error: failure ? "Account unavailable" : null,
+    }),
+    resolve: async () => {
+      if (failure) throw failure;
+      return {
+        identity: require("../src/catalog-cache.cjs").catalogIdentity({
+          mode: "account",
+          connectionId: "c",
+          accountId: "42",
+          keyId: "studixly",
+          revision: 1,
+        }),
+        client: {
+          models: async () => [{ id: "saved-image", type: "image" }],
+          videoCapabilities: async () => [],
+        },
+      };
+    },
+  };
+  const f = await setup(t, { credentialSession: session });
+  await f.studio.handle({ type: "requestCatalog" });
+  failure = Error("private transport details");
+  await f.studio.handle({ type: "requestCatalog" });
+  let last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.available, true);
+  assert.equal(last.stale, true);
+  assert(last.error);
+  assert.equal(last.models[0].id, "saved-image");
+  assert(!JSON.stringify(last).includes("private transport"));
+  await f.studio.handle({ type: "ready" });
+  last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.available, true);
+  assert.equal(last.stale, true);
+  failure = Object.assign(Error("Choose another active Key."), {
+    safe: true,
+    code: "selected_key_unavailable",
+  });
+  await f.studio.handle({ type: "requestCatalog" });
+  last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.available, true);
+  assert.equal(last.stale, true);
+  assert.equal(last.models[0].id, "saved-image");
+  failure = Object.assign(Error("Reconnect account."), {
+    safe: true,
+    code: "unauthorized",
+  });
+  await f.studio.handle({ type: "requestCatalog" });
+  last = f.messages.filter((m) => m.type === "catalog").at(-1);
+  assert.equal(last.available, false);
+  assert.equal(last.clear, true);
 });

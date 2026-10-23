@@ -494,7 +494,8 @@ function createStudio({
       ? undefined
       : await context.secrets.get("apixlyMedia.apiKey");
     if (disposed || epoch !== catalogEpoch) return;
-    if (connected ? !connected.hasCredential : !key) {
+    const accountMode = connected?.mode === "account";
+    const clear = async () => {
       if (activeCatalogIdentity)
         catalogResolver.invalidate(activeCatalogIdentity);
       activeCatalogIdentity = undefined;
@@ -505,15 +506,89 @@ function createStudio({
         available: false,
         clear: true,
       });
+    };
+    if (
+      connected
+        ? accountMode
+          ? !connected.hasConnection
+          : !connected.hasCredential
+        : !key
+    ) {
+      await clear();
       return;
     }
-    const resolved = credentialSession
-      ? await credentialSession.resolve({ refreshAccount: force })
-      : undefined;
-    if (disposed || epoch !== catalogEpoch) return;
-    const identity = resolved
-      ? resolved.identity
-      : catalogIdentity({ mode: "manual", key });
+    if (
+      activeCatalogIdentity &&
+      connected &&
+      !activeCatalogIdentity.startsWith(`${connected.mode}:`)
+    ) {
+      catalogResolver.invalidate(activeCatalogIdentity);
+      activeCatalogIdentity = undefined;
+    }
+    let resolved, identity;
+    if (accountMode && cachedOnly) {
+      if (connected.errorCode === "unauthorized") {
+        await clear();
+        return;
+      }
+      if (!connected.account) {
+        await send({
+          type: "catalog",
+          models: [],
+          videos: [],
+          available: false,
+          clear: true,
+          error: connected.error || null,
+        });
+        return;
+      }
+      const metadata = connected.account;
+      identity = catalogIdentity({
+        mode: "account",
+        connectionId: metadata.connection_id,
+        accountId: metadata.account.id,
+        keyId: metadata.selected_key.id,
+        revision: metadata.selection_revision,
+      });
+      if (connected.error) catalogResolver.markAccountError(identity);
+    } else {
+      try {
+        resolved = credentialSession
+          ? await credentialSession.resolve({ refreshAccount: accountMode })
+          : undefined;
+        if (disposed || epoch !== catalogEpoch) return;
+        if (accountMode) await state();
+        identity = resolved
+          ? resolved.identity
+          : catalogIdentity({ mode: "manual", key });
+      } catch (error) {
+        if (disposed || epoch !== catalogEpoch) return;
+        if (!accountMode) throw error;
+        await state();
+        if (disposed || epoch !== catalogEpoch) return;
+        if (error.code === "unauthorized") {
+          await clear();
+          return;
+        }
+        const saved = activeCatalogIdentity
+          ? catalogResolver.markAccountError(activeCatalogIdentity)
+          : {
+              models: [],
+              videos: [],
+              available: false,
+              error:
+                "Could not refresh account information. Try Refresh account or Refresh models.",
+            };
+        await send({
+          type: "catalog",
+          ...saved,
+          stale: true,
+          refreshing: false,
+          clear: !saved.available,
+        });
+        return;
+      }
+    }
     if (activeCatalogIdentity && activeCatalogIdentity !== identity)
       catalogResolver.invalidate(activeCatalogIdentity);
     activeCatalogIdentity = identity;

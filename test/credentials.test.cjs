@@ -281,7 +281,8 @@ test("account refresh failures remain visible while preserving same-account Key 
   assert.match(view.error, /Could not refresh/);
   assert(!view.error.includes("private"));
   assert.equal(view.keys.length, 2);
-  assert.equal(view.hasCredential, false);
+  assert.equal(view.hasCredential, true);
+  assert.equal((await f.session.resolve()).client.ready, true);
 });
 
 test("a late SecretStorage read cannot publish the previous credential mode", async () => {
