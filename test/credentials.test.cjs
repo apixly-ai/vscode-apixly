@@ -420,3 +420,58 @@ test("a delayed old stored-token read cannot roll the identity back after a newe
   assert.equal((await old).identity, current.identity);
   assert.equal((await f.session.view()).account.account.id, "B");
 });
+
+test("old loading cleanup cannot erase the newer connection's in-flight singleton", async () => {
+  const f = setup({ [CONNECTION_KEY]: "apc_account_a" });
+  f.state.set(AUTH_MODE, "account");
+  let releaseA,
+    releaseB,
+    callsB = 0;
+  f.accountClient.account = async (token) =>
+    token === "apc_account_a"
+      ? await new Promise((resolve) => {
+          releaseA = resolve;
+        })
+      : (callsB++,
+        await new Promise((resolve) => {
+          releaseB = resolve;
+        }));
+  const old = f.session.resolve().catch((e) => e);
+  while (!releaseA) await new Promise((resolve) => setImmediate(resolve));
+  f.secrets.set(CONNECTION_KEY, "apc_account_b");
+  await f.session.credentialsChanged(CONNECTION_KEY);
+  const one = f.session.resolve({ refreshAccount: true });
+  while (!releaseB) await new Promise((resolve) => setImmediate(resolve));
+  releaseA(metadata);
+  await old;
+  const two = f.session.resolve({ refreshAccount: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(callsB, 1);
+  releaseB({ ...metadata, connection_id: "B", account: { id: "B" } });
+  assert.equal((await one).identity, (await two).identity);
+});
+
+for (const action of ["selectKey", "disconnect"])
+  test(`late ${action} completion cannot modify the newer stored connection`, async () => {
+    const f = setup({ [CONNECTION_KEY]: "apc_account_a" });
+    f.state.set(AUTH_MODE, "account");
+    let release;
+    f.accountClient.account = async (token) => ({
+      ...metadata,
+      connection_id: token,
+      account: { id: token === "apc_account_a" ? "A" : "B" },
+    });
+    f.accountClient[action] = async () =>
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+    const old = f.session[action]("7").catch((e) => e);
+    while (!release) await new Promise((resolve) => setImmediate(resolve));
+    f.secrets.set(CONNECTION_KEY, "apc_account_b");
+    await f.session.credentialsChanged(CONNECTION_KEY);
+    await f.session.resolve();
+    release(action === "selectKey" ? metadata : undefined);
+    assert((await old).safe);
+    assert.equal(f.secrets.get(CONNECTION_KEY), "apc_account_b");
+    assert.equal((await f.session.view()).account.account.id, "B");
+  });
