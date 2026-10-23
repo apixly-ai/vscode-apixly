@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 — 2026-10-23
+
+- Use direct image URLs so Marketplace artwork loads without a GitHub web session.
+- Add the public Marketplace installation link to the setup guide.
+
 ## 0.1.1 — 2026-10-23
 
 - Add an Apixly brand cover, real image/edit/video gallery, and clearer installation and account links.

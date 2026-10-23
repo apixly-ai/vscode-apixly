@@ -1,8 +1,8 @@
 # Apixly Media
 
-**[Download VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest)** · **[Get an API key](https://platform.apixly.ai/keys)** · **[Models & prices](https://platform.apixly.ai/models)** · **[apixly.ai](https://apixly.ai)**
+**[Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=apixly.apixly-media)** · **[Download VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest)** · **[Get an API key](https://platform.apixly.ai/keys)** · **[Models & prices](https://platform.apixly.ai/models)** · **[apixly.ai](https://apixly.ai)**
 
-[![Apixly Media for VS Code: create images, edit with references, generate video, and save assets into your project](media/hero.png)](https://apixly.ai)
+[![Apixly Media for VS Code: create images, edit with references, generate video, and save assets into your project](https://raw.githubusercontent.com/apixly-ai/vscode-apixly/apixly/media/hero.png)](https://apixly.ai)
 
 Create images, refine them with references, and generate video inside VS Code. **Apixly Media Studio** brings your prompt, models, previews, and project files into one creative workspace.
 
@@ -12,13 +12,13 @@ Image generation starts at US$0.02 per image for selected models/settings. Check
 
 ## Your studio, inside your editor
 
-![Apixly Media Studio in VS Code with a finished reference video and project save controls](media/studio-preview.png)
+![Apixly Media Studio in VS Code with a finished reference video and project save controls](https://raw.githubusercontent.com/apixly-ai/vscode-apixly/apixly/media/studio-preview.png)
 
 The actual VS Code panel, showing a finished reference video and **Save to project**. Your key stays in SecretStorage; generated media goes where you choose.
 
 ## From an idea to a finished asset
 
-![Actual release samples: a generated red cube edited blue, two references combined, a mountain-lake video frame, and the existing-task recovery flow](media/workflow.png)
+![Actual release samples: a generated red cube edited blue, two references combined, a mountain-lake video frame, and the existing-task recovery flow](https://raw.githubusercontent.com/apixly-ai/vscode-apixly/apixly/media/workflow.png)
 
 - **Generate an image.** Choose an exact model, describe your idea, and preview the finished result.
 - **Edit with references.** Pick one or several local images and explain what to change, combine, or preserve. Start with `gemini-3.1-flash-image` for the qualified reference-edit workflow.
@@ -29,7 +29,7 @@ The gallery uses actual outputs from release acceptance on October 23, 2026. Its
 
 ## Start
 
-1. [Download the latest VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest), run **Extensions: Install from VSIX**, and open a trusted **local** workspace folder in VS Code 1.109 or later.
+1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=apixly.apixly-media), or [download the VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest) and use **Extensions: Install from VSIX**. Open a trusted **local** workspace folder in VS Code 1.109 or later.
 2. Run **Apixly Media: Open Media Studio** from the Command Palette.
 3. New to Apixly? [Create an account and get an API key](https://platform.apixly.ai/keys), then choose **Connect API key** in the panel. Your key is entered in VS Code's secure input, never in the Webview.
 4. Choose **Image**, **Edit image**, or **Video**. Enter your prompt, an exact model ID, and any needed parameters. The panel starts with qualified model suggestions; you can enter another exact ID. No model is substituted after submission.
@@ -102,10 +102,10 @@ npm ci
 npm test
 npm run check
 npm run list-package
-npm run package -- --out /absolute/path/apixly-media-0.1.0.vsix
+npm run package -- --out /absolute/path/apixly-media.vsix
 ```
 
-Use **Extensions: Install from VSIX** to install a local package. The publisher account must be configured separately before Marketplace publication; a packaged VSIX alone does not establish a public listing. Source and issue reports: [apixly-ai/vscode-apixly](https://github.com/apixly-ai/vscode-apixly). Support: [support@apixly.ai](mailto:support@apixly.ai).
+Use **Extensions: Install from VSIX** to install a local development package. Source and issue reports: [apixly-ai/vscode-apixly](https://github.com/apixly-ai/vscode-apixly). Support: [support@apixly.ai](mailto:support@apixly.ai).
 
 Developer API references: [VS Code SecretStorage](https://code.visualstudio.com/api/references/vscode-api#SecretStorage), [extension manifest](https://code.visualstudio.com/api/references/extension-manifest), and [packaging and publication](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
 
