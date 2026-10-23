@@ -1,0 +1,109 @@
+{
+  "name": "apixly-media",
+  "displayName": "Apixly Media",
+  "description": "A creative studio for apixly.ai images, edits and video: preview, resume and save in VS Code. Free extension; pay-as-you-go API.",
+  "version": "0.1.0",
+  "publisher": "apixly",
+  "license": "MIT",
+  "author": {
+    "name": "Apixly",
+    "email": "support@apixly.ai",
+    "url": "https://apixly.ai"
+  },
+  "homepage": "https://apixly.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apixly-ai/vscode-apixly.git"
+  },
+  "bugs": {
+    "url": "https://github.com/apixly-ai/vscode-apixly/issues",
+    "email": "support@apixly.ai"
+  },
+  "engines": {
+    "vscode": "^1.109.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "apixly",
+    "image generation",
+    "image editing",
+    "video generation",
+    "assets",
+    "AI"
+  ],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#06070a",
+    "theme": "dark"
+  },
+  "main": "./src/extension.cjs",
+  "extensionKind": [
+    "ui"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Media generation uploads your chosen prompt and reference files and saves project assets."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Saving generated media requires a local workspace folder."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "apixlyMedia.open",
+        "title": "Open Media Studio",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.setApiKey",
+        "title": "Set API Key",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.clearApiKey",
+        "title": "Clear API Key",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.generateImage",
+        "title": "Generate Image",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.editImage",
+        "title": "Edit Image with References",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.generateVideo",
+        "title": "Generate Video",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.resumeTask",
+        "title": "Resume Task",
+        "category": "Apixly Media"
+      },
+      {
+        "command": "apixlyMedia.checkTask",
+        "title": "Check Task and Save Result",
+        "category": "Apixly Media"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.cjs",
+    "check": "node --check src/core.cjs && node --check src/extension.cjs && node --check src/panel.cjs && node --check media/studio.js && biome check .",
+    "package": "vsce package --no-dependencies",
+    "list-package": "vsce ls --no-dependencies"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@vscode/vsce": "4.0.0"
+  }
+}

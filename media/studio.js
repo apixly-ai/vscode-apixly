@@ -1,0 +1,382 @@
+(() => {
+  const host = acquireVsCodeApi();
+  const $ = (id) => document.getElementById(id);
+  const defaults = {
+    image: "grok-imagine-image",
+    edit: "gemini-3.1-flash-image",
+    video: "grok-imagine-video",
+  };
+  const rememberedModels = { ...defaults };
+  let mode = "image";
+  let busy = false;
+  let hasKey = false;
+  let references = [];
+  let videoReferences = [];
+  let catalog = [];
+  let videos = [];
+  let history = [];
+  const send = (type, extra = {}) => host.postMessage({ type, ...extra });
+  function showMessage(message, kind = "") {
+    $("message").textContent = message;
+    $("message").className = `message ${kind}`;
+  }
+  function clearMessage() {
+    $("message").className = "message hidden";
+    $("message").textContent = "";
+  }
+  function setBusy(value) {
+    busy = value;
+    $("generate").disabled = value || !hasKey;
+    $("resume-task").disabled = value || !hasKey;
+    for (const button of document.querySelectorAll(
+      ".mode-tab,#pick-references,#clear-references",
+    ))
+      button.disabled = value;
+    for (const control of document.querySelectorAll(
+      "#creation-form input,#creation-form select,#creation-form textarea",
+    ))
+      control.disabled = value;
+    $("generate-label").textContent = value
+      ? "Working on your asset…"
+      : mode === "video"
+        ? "Generate video"
+        : mode === "edit"
+          ? "Edit image"
+          : "Generate image";
+  }
+  function modelOptions() {
+    const models =
+      mode === "video"
+        ? [...new Set([defaults.video, ...videos.map((item) => item.model)])]
+        : [
+            ...new Set([
+              defaults[mode],
+              ...(mode === "image" ? [defaults.edit] : []),
+              ...catalog.filter((id) =>
+                /image|flux|dall-e|imagen|banana/i.test(id),
+              ),
+            ]),
+          ];
+    $("model-options").replaceChildren(
+      ...models.map((model) => {
+        const option = document.createElement("option");
+        option.value = model;
+        return option;
+      }),
+    );
+    const capability = videos.find((item) => item.model === $("model").value);
+    if (mode === "video" && capability) {
+      $("duration").min = String(capability.seconds?.min ?? 1);
+      $("duration").max = String(capability.seconds?.max ?? 30);
+      const duration = Number($("duration").value);
+      if (
+        duration < Number($("duration").min) ||
+        duration > Number($("duration").max)
+      )
+        $("duration").value = $("duration").min;
+      if (Array.isArray(capability.resolutions)) {
+        const previous = $("resolution").value;
+        $("resolution").replaceChildren(
+          ...["", ...capability.resolutions].map((value) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value || "Model default";
+            return option;
+          }),
+        );
+        $("resolution").value = capability.resolutions.includes(previous)
+          ? previous
+          : "";
+      }
+      $("model-hint").textContent =
+        `${capability.seconds?.min ?? "?"}–${capability.seconds?.max ?? "?"} seconds · ${(capability.resolutions || []).join(" / ")} · ${(capability.modes || []).join(", ")}${capability.modes?.some((item) => ["image2video", "frames2video"].includes(item)) ? " · Reference images supported." : " · Text prompts only. For image input, explicitly choose grok-imagine-video-1.5-preview or another supported model."}`;
+    } else
+      $("model-hint").textContent =
+        mode === "edit"
+          ? "Start with Gemini for reference edits. Grok image editing is not qualified in this release."
+          : mode === "video"
+            ? "Enter an exact video model ID. Supported duration and references vary by model."
+            : "Choose an image model available to your Apixly key. No model is silently substituted.";
+  }
+  function setMode(next) {
+    rememberedModels[mode] = $("model").value;
+    mode = next;
+    $("model").value = rememberedModels[mode];
+    for (const tab of document.querySelectorAll(".mode-tab")) {
+      const active = tab.dataset.mode === mode;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-selected", String(active));
+    }
+    $("reference-section").classList.toggle("hidden", mode !== "edit");
+    $("video-reference-section").classList.toggle("hidden", mode !== "video");
+    $("video-duration-row").classList.toggle("hidden", mode !== "video");
+    $("video-resolution-row").classList.toggle("hidden", mode !== "video");
+    $("prompt").placeholder =
+      mode === "edit"
+        ? "What should change? Describe the edit and what to preserve in your reference image…"
+        : mode === "video"
+          ? "A small red cube gently rotates on a studio floor. Fixed camera, soft light…"
+          : "A sculptural glass object, electric blue light, a quiet studio. Describe what you want to see…";
+    modelOptions();
+    setBusy(busy);
+  }
+  function renderHistory() {
+    $("task-history").replaceChildren();
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "Choose a recent task";
+    $("task-history").append(empty);
+    for (let index = 0; index < history.length; index++) {
+      const job = history[index];
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = `${job.kind} · ${job.id} · ${job.status || "unknown"}`;
+      $("task-history").append(option);
+    }
+    $("history-count").textContent =
+      `${history.length} recent task${history.length === 1 ? "" : "s"}`;
+  }
+  function renderReferences() {
+    $("reference-list").replaceChildren();
+    for (const reference of references) {
+      const item = document.createElement("div");
+      item.className = "reference-item";
+      if (reference.previewUri) {
+        const image = document.createElement("img");
+        image.src = reference.previewUri;
+        image.alt = reference.name;
+        item.append(image);
+      }
+      const label = document.createElement("span");
+      label.textContent = `${reference.name} · ${(reference.bytes / 1024).toFixed(0)} KB`;
+      item.append(label);
+      $("reference-list").append(item);
+    }
+    $("clear-references").classList.toggle("hidden", references.length === 0);
+    $("pick-references").querySelector("strong").textContent = references.length
+      ? "Add more reference images"
+      : "Choose reference images";
+  }
+  $("settings-toggle").addEventListener("click", () => {
+    $("settings").open = !$("settings").open;
+    if ($("settings").open)
+      $("settings").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  for (const anchor of document.querySelectorAll("[data-link]"))
+    anchor.addEventListener("click", (event) => {
+      event.preventDefault();
+      send("openLink", { link: anchor.dataset.link });
+    });
+  for (const button of document.querySelectorAll("[data-action]"))
+    button.addEventListener("click", () => send(button.dataset.action));
+  for (const tab of document.querySelectorAll(".mode-tab"))
+    tab.addEventListener("click", () => setMode(tab.dataset.mode));
+  $("model").addEventListener("change", modelOptions);
+  $("prompt").addEventListener("input", () => {
+    $("prompt-count").textContent =
+      `${$("prompt").value.length.toLocaleString()} / 20,000`;
+  });
+  $("pick-references").addEventListener("click", () =>
+    send("selectReferences"),
+  );
+  $("clear-references").addEventListener("click", () =>
+    send("clearReferences"),
+  );
+  $("cancel-polling").addEventListener("click", () => send("cancelPolling"));
+  $("attach-video-url").addEventListener("click", () => {
+    const url = $("video-reference-url").value.trim();
+    if (!url) {
+      showMessage(
+        "Enter a public HTTPS image URL before attaching it.",
+        "error",
+      );
+      return;
+    }
+    send("addVideoUrl", { url });
+    $("video-reference-url").value = "";
+  });
+  $("clear-video-references").addEventListener("click", () =>
+    send("clearVideoReferences"),
+  );
+  $("task-history").addEventListener("change", () => {
+    const job = history[Number($("task-history").value)];
+    if ($("task-history").value !== "" && job) {
+      $("resume-id").value = job.id;
+      $("resume-kind").value = job.kind;
+    }
+  });
+  $("resume-task").addEventListener("click", () => {
+    if (busy) return;
+    const id = $("resume-id").value.trim();
+    if (!id) {
+      showMessage("Select a recent task or paste its ID.", "error");
+      return;
+    }
+    clearMessage();
+    send("resumeTask", { id, kind: $("resume-kind").value });
+  });
+  $("creation-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (busy) return;
+    try {
+      if (!hasKey) throw new Error("Connect an Apixly API key first.");
+      if (mode === "video" && $("video-reference-url").value.trim())
+        throw new Error(
+          "Select Attach URL to confirm the video reference, or clear that field before generating.",
+        );
+      if (mode === "edit" && !references.length)
+        throw new Error("Choose a reference image to edit.");
+      const advanced = JSON.parse($("advanced-params").value);
+      if (!advanced || typeof advanced !== "object" || Array.isArray(advanced))
+        throw new Error("Advanced parameters must be a JSON object.");
+      const params = {};
+      if ($("aspect-ratio").value)
+        params.aspect_ratio = $("aspect-ratio").value;
+      if (mode === "video") {
+        if ($("duration").value) params.seconds = Number($("duration").value);
+        if ($("resolution").value) params.resolution = $("resolution").value;
+      }
+      const merged = { ...params, ...advanced };
+      clearMessage();
+      send("submit", {
+        kind: mode,
+        model: $("model").value,
+        prompt: $("prompt").value,
+        params: JSON.stringify(merged),
+      });
+    } catch (error) {
+      showMessage(
+        error instanceof SyntaxError
+          ? "Advanced parameters must be valid JSON."
+          : error.message || "Check your inputs before submitting.",
+        "error",
+      );
+    }
+  });
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (!message || typeof message.type !== "string") return;
+    if (message.type === "state") {
+      hasKey = Boolean(message.hasKey);
+      history = Array.isArray(message.tasks) ? message.tasks : [];
+      references = Array.isArray(message.references) ? message.references : [];
+      videoReferences = Array.isArray(message.videoReferences)
+        ? message.videoReferences
+        : [];
+      $("video-reference-list").replaceChildren(
+        ...videoReferences.map((item) => {
+          const label = document.createElement("div");
+          label.className = "reference-item";
+          label.textContent = `${item.name} · ${item.origin}`;
+          return label;
+        }),
+      );
+      $("clear-video-references").classList.toggle(
+        "hidden",
+        !videoReferences.length,
+      );
+      $("connection").textContent = hasKey
+        ? "API key saved"
+        : "Connect your API key";
+      $("connection").classList.toggle("connected", hasKey);
+      $("onboarding").classList.toggle("hidden", hasKey);
+      renderHistory();
+      renderReferences();
+      setBusy(busy);
+    } else if (message.type === "videoPreset") {
+      setMode("video");
+      $("video-reference-url").value = "";
+      $("model").value = message.model;
+      rememberedModels.video = message.model;
+      $("duration").value = "3";
+      $("aspect-ratio").value = "16:9";
+      modelOptions();
+      showMessage(
+        "Generated image link attached. Review the explicit video model and parameters, then select Generate video. No video has been submitted.",
+      );
+    } else if (message.type === "catalog") {
+      catalog = Array.isArray(message.models) ? message.models : [];
+      videos = Array.isArray(message.videos) ? message.videos : [];
+      modelOptions();
+    } else if (message.type === "busy") {
+      setBusy(Boolean(message.value));
+      if (!busy) $("progress-section").classList.add("hidden");
+    } else if (message.type === "submitting") {
+      $("empty-output").classList.add("hidden");
+      $("results").replaceChildren();
+      $("progress-section").classList.remove("hidden");
+      $("progress-title").textContent = "Sending your request";
+      $("progress-detail").textContent =
+        "One submission. Your exact model and parameters.";
+      $("task-id").textContent = "";
+      $("cancel-polling").disabled = true;
+      $("output-status").textContent = "Submitting";
+    } else if (message.type === "submitted" || message.type === "progress") {
+      $("empty-output").classList.add("hidden");
+      $("progress-section").classList.remove("hidden");
+      $("cancel-polling").disabled = false;
+      $("progress-title").textContent = "Bringing your idea to life";
+      $("progress-detail").textContent =
+        `${message.task.status || "queued"}${typeof message.progress === "number" ? ` · ${message.progress}%` : ""}`;
+      $("task-id").textContent = `Task ID: ${message.task.id}`;
+      $("output-status").textContent = message.task.status || "Queued";
+      $("progress-bar").style.width =
+        `${typeof message.progress === "number" ? Math.min(100, Math.max(4, message.progress)) : 25}%`;
+    } else if (message.type === "result") {
+      $("empty-output").classList.add("hidden");
+      $("progress-section").classList.add("hidden");
+      $("results").replaceChildren();
+      $("output-status").textContent = "Ready to save";
+      for (const asset of message.assets || []) {
+        const card = document.createElement("article");
+        card.className = "result-card";
+        card.dataset.assetId = asset.id;
+        const media = document.createElement(
+          asset.kind === "video" ? "video" : "img",
+        );
+        media.src = asset.previewUri;
+        if (asset.kind === "video") {
+          media.controls = true;
+          media.preload = "metadata";
+        } else media.alt = "Generated Apixly image";
+        const actions = document.createElement("div");
+        actions.className = "result-actions";
+        const meta = document.createElement("span");
+        meta.className = "result-meta";
+        meta.textContent = `${asset.extension.slice(1).toUpperCase()} · ${(asset.bytes / 1024 / 1024).toFixed(2)} MiB`;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button primary compact";
+        button.textContent = "Save to project ↓";
+        button.addEventListener("click", () =>
+          send("saveAsset", { id: asset.id }),
+        );
+        actions.append(meta);
+        if (asset.canUseForVideo) {
+          const use = document.createElement("button");
+          use.type = "button";
+          use.className = "button secondary compact";
+          use.textContent = "Use for video";
+          use.setAttribute("aria-label", "Use this generated image for video");
+          use.addEventListener("click", () =>
+            send("useGeneratedImage", { id: asset.id }),
+          );
+          actions.append(use);
+        }
+        actions.append(button);
+        card.append(media, actions);
+        $("results").append(card);
+      }
+      showMessage(
+        `Finished with ${message.task.model || "your selected model"}. Task ${message.task.id} stays available in recent history.`,
+      );
+    } else if (message.type === "saved")
+      showMessage(`Saved ${message.filename} to your project.`, "success");
+    else if (message.type === "error") {
+      showMessage(message.message, "error");
+      if (!busy) $("output-status").textContent = "Needs attention";
+    }
+  });
+  setMode("image");
+  send("ready");
+})();

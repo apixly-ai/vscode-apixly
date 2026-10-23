@@ -1,0 +1,9 @@
+.git/**
+.gitignore
+.vscodeignore
+node_modules/**
+test/**
+package-lock.json
+*.vsix
+coverage/**
+biome.json
