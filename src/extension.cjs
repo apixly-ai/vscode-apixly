@@ -228,7 +228,7 @@ function createCommands(context, vscode, options = {}) {
       );
       count++;
     }
-    await vscode.window.showInformationMessage(
+    vscode.window.showInformationMessage(
       `Apixly Media: saved ${count} asset(s). Task ID: ${job.id}`,
     );
   }
@@ -276,7 +276,7 @@ function createCommands(context, vscode, options = {}) {
       if (SUCCESS.has(result.status)) {
         await saveResults(api, job, result);
       } else {
-        await vscode.window.showInformationMessage(
+        vscode.window.showInformationMessage(
           `Apixly task ${job.id}: ${result.status}. Resume Task continues polling without submitting a new request.`,
         );
       }

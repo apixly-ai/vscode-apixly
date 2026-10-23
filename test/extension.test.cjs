@@ -361,3 +361,29 @@ test("an open Studio observes classic-command SecretStorage changes and releases
   close();
   assert.equal(released, true);
 });
+
+test("a one-shot task check releases its lock without waiting for a success notice dismissal", async () => {
+  const f = fixture();
+  f.values.set("apixlyMedia.apiKey", "private-key");
+  let reads = 0;
+  f.vscode.window.showQuickPick = async () => ({
+    job: { kind: "image", id: "existing", model: "exact", status: "queued" },
+  });
+  f.vscode.window.showInformationMessage = () => new Promise(() => undefined);
+  createCommands(f.context, f.vscode, {
+    clientFactory: () => ({
+      status: async () => {
+        reads++;
+        return { status: "queued", assets: [] };
+      },
+    }),
+  });
+  const check = f.registered.get("apixlyMedia.checkTask");
+  const finished = await Promise.race([
+    check().then(() => true),
+    new Promise((resolve) => setImmediate(() => resolve(false))),
+  ]);
+  assert.equal(finished, true);
+  await check();
+  assert.equal(reads, 2);
+});

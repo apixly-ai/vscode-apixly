@@ -329,7 +329,6 @@ function createStudio({
       } else {
         if (message.kind === "edit" && !selected.length)
           throw problem("Choose at least one reference image for editing.");
-        await send({ type: "submitting" });
         const params = { ...message.params };
         if (message.kind === "video" && videoReferences.length)
           params.images = [
@@ -338,6 +337,7 @@ function createStudio({
           ];
         if (message.kind === "video")
           await validateVideoReferences(apiClient, message.model, params);
+        await send({ type: "submitting" });
         const submitted =
           message.kind === "video"
             ? await apiClient.submitVideo({

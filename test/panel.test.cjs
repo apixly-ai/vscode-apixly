@@ -419,3 +419,34 @@ test("video URL selection is explicit and generated-image preset never submits a
   ]);
   await f.studio.dispose();
 });
+
+test("a local capability rejection preserves the existing paid preview instead of clearing it", async (t) => {
+  const f = await setup(t);
+  await f.studio.handle({
+    type: "submit",
+    kind: "image",
+    model: "grok-imagine-image",
+    prompt: "p",
+    params: "{}",
+  });
+  await f.studio.handle({
+    type: "addVideoUrl",
+    url: "https://example.com/reference.png",
+  });
+  f.client.videoCapabilities = async () => [
+    { model: "text-only", modes: ["text2video"] },
+  ];
+  const before = f.messages.length;
+  await f.studio.handle({
+    type: "submit",
+    kind: "video",
+    model: "text-only",
+    prompt: "animate",
+    params: "{}",
+  });
+  assert.ok(
+    !f.messages.slice(before).some((message) => message.type === "submitting"),
+  );
+  assert.equal(f.calls.length, 1);
+  await f.studio.dispose();
+});
