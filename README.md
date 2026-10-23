@@ -2,6 +2,10 @@
 
 Your creative workspace for images, reference edits, and video—inside VS Code. Open the Apixly Media Studio panel, describe your idea, preview the result, then save it directly into your project.
 
+Image generation starts at US$0.02 per image for selected models/settings. Check current prices in the [model catalog](https://platform.apixly.ai/models).
+
+![Apixly Media Studio in VS Code with a finished reference video and project save controls](media/studio-preview.png)
+
 This extension uses the paid [Apixly API](https://apixly.ai). You need an Apixly account, a **standard API key**, and sufficient balance. The extension is free and open source; model usage is billed by Apixly. A ChatGPT or Claude subscription is not an Apixly API key.
 
 ## Start
@@ -24,7 +28,7 @@ Explore [apixly.ai](https://apixly.ai) for the full creative studio. Compare [mo
 | Clear API Key | Remove that key from SecretStorage. |
 | Generate Image | Submit one asynchronous image request, then wait for the result. |
 | Edit Image with References | Select one or more reference images, then submit one edit request. |
-| Generate Video | Submit a video with optional local reference images and model parameters. |
+| Generate Video | Submit a text video or supported reference video using public HTTPS image URLs and model parameters. |
 | Resume Task | Select a saved task or enter an existing image/video task ID and continue polling. |
 | Check Task and Save Result | Check once; save assets if the task has finished. |
 
