@@ -6,9 +6,16 @@
 
 Create images, refine them with references, and generate video inside VS Code. **Apixly Media Studio** brings your prompt, models, previews, and project files into one creative workspace.
 
+> **Apixly — one reliable, low-cost AI API platform.**
+> Discover GPT, Gemini, Claude, image and video models in one place. Selected GPT text models are available from **10% of official API rates**. This extension brings Apixly's image and video APIs into your editor.
+>
+> **Website:** [apixly.ai](https://apixly.ai) · **API console:** [platform.apixly.ai](https://platform.apixly.ai) · [Models & prices](https://platform.apixly.ai/models) · [Get an API key](https://platform.apixly.ai/keys) · [API docs](https://apixly.ai/docs)
+
+*The 10% example is `gpt-6.1-sol` standard input/output token pricing, checked October 25, 2026 against [OpenAI's published rates](https://developers.openai.com/api/docs/models/gpt-6.1-sol). Check current prices for your model, tier and Key.*
+
 The extension is **free and open source**. Connect your [Apixly account](https://apixly.ai) in your regular browser, or enter a standard API key. Generation uses your Apixly balance. A ChatGPT or Claude subscription is not an Apixly API key.
 
-Image generation starts at US$0.02 per image for selected models/settings. Check current prices in the [model catalog](https://platform.apixly.ai/models).
+For an image price example, `gemini-3.1-flash-image` 1K costs **US$0.02 per image**, checked October 25, 2026. Check current prices in the [model catalog](https://platform.apixly.ai/models).
 
 ## Your studio, inside your editor
 
