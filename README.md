@@ -153,6 +153,8 @@ VS Code SecretStorage holds the manual API Key or revocable connection token. Yo
 
 ### Where else can I use Apixly AI API?
 
+See the [Apixly AI API plugin integration guide](https://apixly.ai/guides/en/apixly-ai-api-plugins) for the maintained ComfyUI, VS Code and Dify setup paths.
+
 | Integration | Purpose and current source |
 | --- | --- |
 | [ComfyUI nodes](https://github.com/apixly-ai/comfyui-apixly) | Images, edits, video and free creative/image tools; check the [Registry version status](https://registry.comfy.org/publishers/apixly/nodes/comfyui-apixly) before installing. |
