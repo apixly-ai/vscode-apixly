@@ -1,8 +1,8 @@
 {
   "name": "apixly-media",
-  "displayName": "Apixly Media",
-  "description": "A creative studio for apixly.ai images, edits and video: preview, resume and save in VS Code. Free extension; pay-as-you-go API.",
-  "version": "0.2.1",
+  "displayName": "Apixly AI API: Image & Video Studio",
+  "description": "Apixly AI API for VS Code: generate images, edit references and create videos. Connect apixly.ai, discover models and save project assets.",
+  "version": "0.2.2",
   "publisher": "apixly",
   "license": "MIT",
   "author": {
@@ -23,15 +23,19 @@
     "vscode": "^1.109.0"
   },
   "categories": [
+    "Machine Learning",
     "Other"
   ],
   "keywords": [
     "apixly",
-    "image generation",
-    "image editing",
-    "video generation",
-    "assets",
-    "AI"
+    "ai-api",
+    "image-generation",
+    "image-editing",
+    "video-generation",
+    "multimodal",
+    "api-gateway",
+    "text-to-video",
+    "image-to-video"
   ],
   "icon": "media/icon.png",
   "galleryBanner": {

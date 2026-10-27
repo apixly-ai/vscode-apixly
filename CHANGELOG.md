@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2 — 2026-10-27
+
+- Clarify the Apixly AI API identity in the extension title, description and relevant Marketplace search tags.
+- Add practical model-access, pricing, account, recovery and privacy FAQ with direct Apixly documentation links.
+- Link the maintained ComfyUI and Dify integrations without claiming identical capabilities across hosts.
+- Keep generation, account authorization, model selection, local creative controls and project-file behavior unchanged. The release User-Agent follows the package version.
+
 ## 0.2.1
 
 - Add **Open authorization page** and **Copy authorization link** beside the current authorization code, with 44-pixel controls that wrap in narrow panels.

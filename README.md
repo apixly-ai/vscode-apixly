@@ -1,21 +1,22 @@
-# Apixly Media
+# Apixly AI API for VS Code — Image & Video Studio
 
 **[Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=apixly.apixly-media)** · **[Download VSIX](https://github.com/apixly-ai/vscode-apixly/releases/latest)** · **[Get an API key](https://platform.apixly.ai/keys)** · **[Models & prices](https://platform.apixly.ai/models)** · **[apixly.ai](https://apixly.ai)**
 
 [![Apixly Media for VS Code: create images, edit with references, generate video, and save assets into your project](https://raw.githubusercontent.com/apixly-ai/vscode-apixly/apixly/media/hero.png)](https://apixly.ai)
 
-Create images, refine them with references, and generate video inside VS Code. **Apixly Media Studio** brings your prompt, models, previews, and project files into one creative workspace.
+Apixly Media Studio connects VS Code to the [Apixly AI API](https://apixly.ai) for image generation, reference image editing and video generation. Choose an exact model, preview the result and save the finished asset into your project.
 
-> **Apixly — one reliable, low-cost AI API platform.**
-> Discover GPT, Gemini, Claude, image and video models in one place. Selected GPT text models are available from **10% of official API rates**. This extension brings Apixly's image and video APIs into your editor.
->
-> **Website:** [apixly.ai](https://apixly.ai) · **API console:** [platform.apixly.ai](https://platform.apixly.ai) · [Models & prices](https://platform.apixly.ai/models) · [Get an API key](https://platform.apixly.ai/keys) · [API docs](https://apixly.ai/docs)
+The extension is **free and open source**. Connect your own Apixly account in your regular browser, or enter a standard API key. Generation uses your Apixly balance; account connection, model browsing and local creative controls do not submit media requests.
 
-*The 10% example is `gpt-6.1-sol` standard input/output token pricing, checked October 25, 2026 against [OpenAI's published rates](https://developers.openai.com/api/docs/models/gpt-6.1-sol). Check current prices for your model, tier and Key.*
+**[Apixly API console](https://platform.apixly.ai)** · **[Models and prices](https://platform.apixly.ai/models)** · **[Create an API Key](https://platform.apixly.ai/keys)** · **[Image API documentation](https://apixly.ai/docs/images)** · **[Video API documentation](https://apixly.ai/docs/video)**
 
-The extension is **free and open source**. Connect your [Apixly account](https://apixly.ai) in your regular browser, or enter a standard API key. Generation uses your Apixly balance. A ChatGPT or Claude subscription is not an Apixly API key.
+## About Apixly AI API
 
-For an image price example, `gemini-3.1-flash-image` 1K costs **US$0.02 per image**, checked October 25, 2026. Check current prices in the [model catalog](https://platform.apixly.ai/models).
+[Apixly](https://apixly.ai) is an independent AI API platform for developers working with GPT, Gemini, Claude, image and video models. This VS Code integration focuses on images, reference edits, video tasks and project-file delivery; the platform's text APIs are separate services described in the [Apixly API documentation](https://apixly.ai/docs). Accounts, API Keys, model access and usage are managed through [platform.apixly.ai](https://platform.apixly.ai).
+
+Selected GPT standard input/output token tiers are available from **10% of official API rates**. For example, the public `gpt-6.1-sol` standard tier was US$0.20 input / US$1.00 output per million tokens, against [OpenAI's US$2.00 / US$10.00 reference](https://developers.openai.com/api/docs/models/gpt-6.1-sol), checked October 27, 2026. This comparison applies to that model and token tier, not all models, modalities or billing components.
+
+For an image price example, `gemini-3.1-flash-image` 1K was **US$0.02 per image** when checked October 25, 2026. Check the [current model catalog and prices](https://platform.apixly.ai/models) for your exact model, settings and Key before generating.
 
 ## Your studio, inside your editor
 
@@ -123,6 +124,42 @@ Task IDs are not persisted until the API returns one. If submission succeeds but
 Your key lives in VS Code SecretStorage. Prompts and selected references go to Apixly and its upstream provider. Result URLs may use third-party storage; those downloads never receive your API key. Selected reference thumbnails and finished previews use a temporary, private folder under VS Code extension storage. Closing the panel removes that panel's preview cache; saved project files remain. No analytics or advertising is included. Read [PRIVACY.md](PRIVACY.md).
 
 The API base is fixed at `https://apixly.ai/v1` in manual Key mode and `https://apixly.ai/api/integrations/v1` in account mode. The first-party account relay resolves your selected owned Key on the server. This release does not use signed MCP tokens. It supports desktop VS Code with local workspace folders. Remote/virtual workspaces and VS Code for the Web are not supported in this release. It does not provide a coding agent or register a chat model provider.
+
+## Frequently asked questions
+
+### What does the Apixly VS Code extension generate?
+
+It supports text-to-image generation, one or multiple reference-image edits, text-to-video and supported reference-video requests through Apixly. Model-specific inputs and output quality still vary. The Studio shows the chosen model and prompt before you submit; it does not silently switch models or run paid batches.
+
+### Do I need an Apixly API Key or a provider subscription?
+
+Use **Connect Apixly account** to authorize your existing Apixly account and choose an active Key you own, including your default Studixly Key. Manual API-key mode is also supported. A ChatGPT, Claude or other provider subscription is not an Apixly API Key. Follow the [Apixly API-key guide](https://apixly.ai/docs/api-keys) for account and Key setup.
+
+### How are current image and video models discovered?
+
+The model picker reads the catalog authorized for your selected Key, caches it for ten minutes and supports manual refresh. Exact model IDs remain editable and are preserved across refreshes. A catalog entry is not proof that every parameter combination or output quality has been tested. Compare [Apixly models and prices](https://platform.apixly.ai/models) and the [model-access guide](https://apixly.ai/docs/models).
+
+### Is the extension free, and when does billing start?
+
+The extension and local prompt controls are free. Browsing models, connecting an account and copying a composed prompt do not generate media. **Generate** submits an API request billed to your Apixly account. The platform lists rates for the exact model and settings, so verify those rates before submitting.
+
+### Can I resume an existing task without another generation?
+
+Yes. Check or resume the original task ID to retrieve its status and available output. This does not submit another generation. Save temporary image results promptly; a retained task record does not guarantee that an expired media file is still downloadable. Stop local waiting before changing credentials, and inspect the original task after an uncertain submission.
+
+### Where are my credentials and generated files stored?
+
+VS Code SecretStorage holds the manual API Key or revocable connection token. Your website password and underlying account Key do not enter the extension's account flow. You choose where finished media is saved in the trusted local workspace; existing files are preserved. See [Privacy and compatibility](#privacy-and-compatibility) for the complete boundary.
+
+### Where else can I use Apixly AI API?
+
+| Integration | Purpose and current source |
+| --- | --- |
+| [ComfyUI nodes](https://github.com/apixly-ai/comfyui-apixly) | Images, edits, video and free creative/image tools; check the [Registry version status](https://registry.comfy.org/publishers/apixly/nodes/comfyui-apixly) before installing. |
+| [Dify Media](https://marketplace.dify.ai/plugin/apixly-ai/apixly_media) | Image and video tasks in Dify workflows, with your own Apixly credentials. |
+| [Dify Creative Controls](https://marketplace.dify.ai/plugin/apixly-ai/apixly_creative) | Independent free viewpoint, lighting and camera-look prompt tools; no Apixly account or inference call is required. |
+
+All integrations use the official [apixly.ai](https://apixly.ai) service and [Apixly API documentation](https://apixly.ai/docs). These links describe the maintained Apixly projects; they do not imply affiliation with the underlying model developers.
 
 ## Develop and package
 
